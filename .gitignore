@@ -1,0 +1,73 @@
+# Python bytecode and cache
+__pycache__/
+*.py[cod]
+*$py.class
+migrations/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.idea/
+.vscode/
+
+# Django specific
+*.log
+*.pot
+*.pyc
+db.sqlite3
+media/
+staticfiles/
+local_settings.py
+
+# Ignore Django migrations (optional, if you don’t want them tracked)
+**/migrations/
+!**/migrations/__init__.py
+
+# Ignore settings.py to protect sensitive credentials
+**/settings.py
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+
+# Cache and compiled files
+*.mo
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Coverage and testing
+.coverage
+htmlcov/
+.tox/
+.nox/
+.pytest_cache/
+coverage.xml
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# Backup files
+*.bak
+*.swp
+*.swo
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+
+# IDE project settings
+*.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+logs/
+*.log
+

@@ -1,0 +1,23 @@
+{% extends "xypher_lux/base.html" %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-6">
+            <img src="{% if product.image %}{{ product.image.url }}{% else %}#{% endif %}" 
+                 class="img-fluid" alt="{{ product.name }}">
+        </div>
+        <div class="col-md-6">
+            <h1>{{ product.name }}</h1>
+            <p class="h4 text-primary">${{ product.price }}</p>
+            <p>{{ product.description|linebreaks }}</p>
+            
+            <form action="{% url 'cart:cart_add' product.id %}" method="post">
+                {{ cart_product_form }}
+                {% csrf_token %}
+                <input type="submit" value="Add to cart" class="btn btn-success mt-3">
+            </form>
+        </div>
+    </div>
+{% endblock %}

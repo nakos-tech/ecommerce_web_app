@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product List - StyleHub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fafafa;
+        }
+        
+        .category-card {
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .category-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .category-image {
+            transition: transform 0.5s ease;
+        }
+        
+        .category-card:hover .category-image {
+            transform: scale(1.05);
+        }
+        
+        .category-overlay {
+            background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .category-card:hover .category-overlay {
+            opacity: 1;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .login-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .login-content {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+            animation: modalFadeIn 0.3s;
+        }
+        
+        .login-pattern {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5rem;
+            color: white;
+            cursor: pointer;
+        }
+        
+        .field-error {
+            border-color: #ef4444 !important;
+            background-color: #fef2f2;
+        }
+        
+        .field-success {
+            border-color: #10b981 !important;
+        }
+        
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <a href="#" class="text-2xl font-bold text-indigo-600">Style<span class="text-pink-500">Hub</span></a>
+                </div>
+                
+                <nav class="hidden md:flex space-x-8">
+                    <a href="#" class="text-gray-700 hover:text-indigo-600 font-medium">Home</a>
+                    <a href="#" class="text-gray-700 hover:text-indigo-600 font-medium">Men</a>
+                    <a href="#" class="text-gray-700 hover:text-indigo-600 font-medium">Women</a>
+                    <a href="#" class="text-gray-700 hover:text-indigo-600 font-medium">Kids</a>
+                    <a href="/login" class="text-gray-700 hover:text-indigo-600 font-medium">Sale</a>
+                </nav>
+                
+                <div class="flex items-center space-x-6">
+                    <button class="text-gray-700 hover:text-indigo-600">
+                        <i class="fas fa-search text-lg"></i>
+                    </button>
+                    <button class="text-gray-700 hover:text-indigo-600 relative">
+                        
+                        <i class="fas fa-shopping-cart text-lg"></i>
+                        <span class="absolute -top-2 -right-2 text-xs bg-pink-500 text-white rounded-full h-5 w-5 flex items-center justify-center">3</span>
+                    </button>
+                    <a href="#" id="showLogin" class="text-gray-700 hover:text-indigo-600">
+                        <i class="fas fa-user text-lg"></i>
+                    </a>
+                    <button class="md:hidden text-gray-700">
+                        <i class="fas fa-bars text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="login-modal" id="loginModal">
+        <div class="login-content">
+            <div class="login-pattern text-white py-6 px-6 text-center relative">
+                <h2 class="text-2xl font-bold">Welcome Back</h2>
+                <p class="mt-2">Sign in to your account</p>
+                <span class="close-btn" id="closeModal">&times;</span>
+            </div>
+            
+            <div class="py-8 px-6">
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 hidden rounded" id="error-message">
+                    <p>Invalid username or password. Please try again.</p>
+                </div>
+                
+                <form id="login-form" method="POST" action="{% url 'xypher_lux:login_view' %}">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="username" class="block text-gray-700 text-sm font-medium mb-2">Username or Email</label>
+                        <input type="text" id="username" name="username" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter your username or email">
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label for="password" class="block text-gray-700 text-sm font-medium mb-2">Password</label>
+                        <input type="password" id="password" name="password" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter your password">
+                        <div class="mt-2 text-right">
+                            <a href="#" id="forgotPasswordLink" class="text-sm text-indigo-600 hover:underline">Forgot password?</a>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <button type="submit" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-300">
+                            Sign In
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="text-center">
+                    <p class="text-sm text-gray-600">
+                        Don't have an account? 
+                        <a href="#" id="showSignup" class="font-medium text-indigo-600 hover:text-indigo-500">Sign up</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sign-Up Modal -->
+    <div class="login-modal" id="signupModal">
+        <div class="login-content">
+            <div class="login-pattern text-white py-6 px-6 text-center relative">
+                <h2 class="text-2xl font-bold">Create an Account</h2>
+                <p class="mt-2">Join us and discover the latest fashion trends</p>
+                <span class="close-btn" id="closeSignupModal">&times;</span>
+            </div>
+    
+            <div class="py-8 px-6">
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 hidden rounded" id="signup-error-message">
+                    <p>An error occurred. Please check your information and try again.</p>
+                </div>
+    
+                <form id="signup-form" method="POST" action="{% url 'xypher_lux:signup_view' %}">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="first_name" class="block text-gray-700 text-sm font-medium mb-2">First Name *</label>
+                            <input type="text" id="first_name" name="first_name" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Your first name">
+                            <span class="text-red-500 text-xs hidden" id="first_name_error"></span>
+                        </div>
+                        <div>
+                            <label for="last_name" class="block text-gray-700 text-sm font-medium mb-2">Last Name *</label>
+                            <input type="text" id="last_name" name="last_name" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Your last name">
+                            <span class="text-red-500 text-xs hidden" id="last_name_error"></span>
+                        </div>   
+                    </div>
+    
+                    <div class="mb-4">
+                        <label for="email" class="block text-gray-700 text-sm font-medium mb-2">Email *</label>
+                        <input type="email" id="email" name="email" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="your_email@example.com">
+                        <span class="text-red-500 text-xs hidden" id="email_error"></span>
+                    </div>
+    
+                    <div class="mb-4">
+                        <label for="phone_number" class="block text-gray-700 text-sm font-medium mb-2">Phone Number *</label>
+                        <div class="flex">
+                            <select id="country_code" name="country_code" class="px-2 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="+1">+1 (USA)</option>
+                                <option value="+44">+44 (UK)</option>
+                                <option value="+254" selected>+254 (KEN)</option>
+                            </select>
+                            <input type="tel" id="phone_number" name="phone_number" required class="w-full px-4 py-2 border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g., 712 345 678">
+                        </div>
+                        <span class="text-red-500 text-xs hidden" id="phone_number_error"></span>
+                    </div>
+    
+                    <div class="mb-4">
+                        <label for="password_signup" class="block text-gray-700 text-sm font-medium mb-2">Password *</label>
+                        <input type="password" id="password_signup" name="password" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter your password">
+                        <p class="mt-2 text-xs text-gray-500">
+                            Password must be at least 8 characters long, contain an uppercase letter, and a number.
+                        </p>
+                        <span class="text-red-500 text-xs hidden" id="password_error"></span>
+                    </div>
+                    <div class="mb-6">
+                        <label for="password_confirm" class="block text-gray-700 text-sm font-medium mb-2">Confirm Password *</label>
+                        <input type="password" id="password_confirm" name="password_confirm" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Confirm your password">
+                        <span class="text-red-500 text-xs hidden" id="password_confirm_error"></span>
+                    </div>
+    
+                    <div class="mb-6">
+                        <button type="submit" id="signup-submit-btn" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-300">
+                            Sign Up
+                        </button>
+                    </div>
+                </form>
+    
+                <div class="text-center">
+                    <p class="text-sm text-gray-600">
+                        Already have an account?
+                        <a href="#" id="showLoginFromSignup" class="font-medium text-indigo-600 hover:text-indigo-500">Sign in</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generate Code Modal -->
+    <div class="login-modal" id="generateCodeModal">
+        <div class="login-content">
+            <div class="login-pattern text-white py-6 px-6 text-center relative">
+                <h2 class="text-2xl font-bold">Forgot Your Password?</h2>
+                <p class="mt-2">Enter your email to receive a password reset code.</p>
+                <span class="close-btn" id="closeGenerateCodeModal">&times;</span>
+            </div>
+
+            <div class="py-8 px-6">
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 hidden rounded" id="generate-code-error-message">
+                    <p></p>
+                </div>
+                <form id="generate-code-form" method="POST" action="{% url 'xypher_lux:forgot_password' %}">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="forgot_email" class="block text-gray-700 text-sm font-medium mb-2">Email</label>
+                        <input type="email" id="forgot_email" name="email" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter your email address">
+                    </div>
+                    <div class="mb-6">
+                        <button type="submit" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-300">
+                            Generate Code
+                        </button>
+                    </div>
+                </form>
+                <div class="text-center">
+                    <p class="text-sm text-gray-600">
+                        Remember your password?
+                        <a href="#" id="showLoginFromGenerateCode" class="font-medium text-indigo-600 hover:text-indigo-500">Sign in</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Verify Code Modal -->
+    <div class="login-modal" id="verifyCodeModal">
+        <div class="login-content">
+            <div class="login-pattern text-white py-6 px-6 text-center relative">
+                <h2 class="text-2xl font-bold">Verify Your Code</h2>
+                <p class="mt-2">A 5-digit code was sent to your email.</p>
+                <span class="close-btn" id="closeVerifyCodeModal">&times;</span>
+            </div>
+
+            <div class="py-8 px-6">
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 hidden rounded" id="verify-code-error-message">
+                    <p></p>
+                </div>
+                <form id="verify-code-form" method="POST" action="{% url 'xypher_lux:verify_code' %}">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="verification_code" class="block text-gray-700 text-sm font-medium mb-2">Verification Code</label>
+                        <input type="text" id="verification_code" name="code" class="w-full px-4 py-2 border rounded-lg text-center font-bold text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g., 12345">
+                    </div>
+                    <div class="mb-6">
+                        <button type="submit" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-300">
+                            Verify Code
+                        </button>
+                    </div>
+                </form>
+                <div class="text-center">
+                    <p class="text-sm text-gray-600">
+                        Didn't receive a code?
+                        <a href="#" id="resendCode" class="font-medium text-indigo-600 hover:text-indigo-500">Resend Code</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Set New Password Modal -->
+    <div class="login-modal" id="setNewPasswordModal">
+        <div class="login-content">
+            <div class="login-pattern text-white py-6 px-6 text-center relative">
+                <h2 class="text-2xl font-bold">Set New Password</h2>
+                <p class="mt-2">Create a new, strong password for your account.</p>
+                <span class="close-btn" id="closeSetNewPasswordModal">&times;</span>
+            </div>
+
+            <div class="py-8 px-6">
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 hidden rounded" id="set-password-error-message">
+                    <p></p>
+                </div>
+                <form id="set-new-password-form" method="POST" action="{% url 'xypher_lux:set_new_password' %}">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="new_password" class="block text-gray-700 text-sm font-medium mb-2">New Password</label>
+                        <input type="password" id="new_password" name="new_password" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter new password">
+                        <p class="mt-2 text-xs text-gray-500">
+                            Password must be at least 8 characters long, contain an uppercase letter, and a number.
+                        </p>
+                    </div>
+                    <div class="mb-6">
+                        <label for="confirm_new_password" class="block text-gray-700 text-sm font-medium mb-2">Confirm Password</label>
+                        <input type="password" id="confirm_new_password" name="confirm_new_password" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Confirm new password">
+                    </div>
+                    <div class="mb-6">
+                        <button type="submit" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-300">
+                            Set Password
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    
+    <div class="login-modal" id="cartModal">
+        <div class="login-content" style="max-width: 900px;">
+            
+            <!-- VIEW 1: Cart View (Default) -->
+            <div id="cartView" class="cart-modal-view">
+                <div class="login-pattern text-white py-6 px-6 relative">
+                    <h2 class="text-2xl font-bold">Shopping Cart</h2>
+                    <p class="mt-2" id="cartItemCount">0 items in your cart</p>
+                    <span class="close-btn" id="closeCartModal">&times;</span>
+                </div>
+                
+                <div class="py-8 px-6">
+                    <!-- Cart Items Container -->
+                    <div id="cartItemsContainer" class="max-h-96 overflow-y-auto mb-6">
+                        <!-- Cart items will be dynamically inserted here -->
+                    </div>
+    
+                    <!-- Cart Summary -->
+                    <div id="cartSummary" class="border-t pt-6">
+                        <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-gray-600">Subtotal:</span>
+                                <span class="text-lg font-semibold text-gray-800" id="cartSubtotal">$0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-gray-600">Shipping:</span>
+                                <span class="text-gray-800" id="cartShipping">$5.00</span>
+                            </div>
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-gray-600">Tax (8%):</span>
+                                <span class="text-gray-800" id="cartTax">$0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center border-t pt-4">
+                                <span class="text-xl font-bold text-gray-800">Total:</span>
+                                <span class="text-2xl font-bold text-indigo-600" id="cartTotal">$0.00</span>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <button onclick="showEmptyCartConfirm()" class="w-full border-2 border-red-500 text-red-500 py-3 rounded-lg font-semibold hover:bg-red-50 transition duration-300">
+                                <i class="fas fa-trash mr-2"></i>Empty Cart
+                            </button>
+                            <button onclick="closeCartModal()" class="w-full border-2 border-indigo-600 text-indigo-600 py-3 rounded-lg font-semibold hover:bg-indigo-50 transition duration-300">
+                                Continue Shopping
+                            </button>
+                            <button onclick="proceedToCheckout()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300">
+                                Checkout <i class="fas fa-arrow-right ml-2"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- VIEW 2: Empty Cart State -->
+            <div id="emptyCartView" class="cart-modal-view hidden">
+                <div class="login-pattern text-white py-6 px-6 relative">
+                    <h2 class="text-2xl font-bold">Shopping Cart</h2>
+                    <p class="mt-2">Your cart is currently empty</p>
+                    <span class="close-btn" onclick="closeCartModal()">&times;</span>
+                </div>
+                
+                <div class="py-16 px-6 text-center">
+                    <i class="fas fa-shopping-cart text-gray-300 text-7xl mb-6"></i>
+                    <h3 class="text-2xl font-semibold text-gray-700 mb-3">Your cart is empty</h3>
+                    <p class="text-gray-500 mb-8 max-w-md mx-auto">
+                        Looks like you haven't added any items to your cart yet. Start shopping to fill it up!
+                    </p>
+                    <button onclick="closeCartModal()" class="bg-indigo-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-indigo-700 transition duration-300 shadow-lg">
+                        <i class="fas fa-shopping-bag mr-2"></i>Start Shopping
+                    </button>
+                </div>
+            </div>
+    
+            <!-- VIEW 3: Update Cart Item View -->
+            <div id="updateCartView" class="cart-modal-view hidden">
+                <div class="login-pattern text-white py-6 px-6 relative">
+                    <button onclick="showCartView()" class="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-200">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </button>
+                    <h2 class="text-2xl font-bold">Update Item</h2>
+                    <p class="mt-2">Modify item details</p>
+                    <span class="close-btn" onclick="closeCartModal()">&times;</span>
+                </div>
+                
+                <div class="py-8 px-6">
+                    <div id="updateItemDetails" class="mb-6">
+                        <!-- Item details will be populated here -->
+                    </div>
+                    
+                    <form id="updateCartForm" class="space-y-4">
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-2">Size</label>
+                            <select id="updateSize" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="XS">Extra Small</option>
+                                <option value="S">Small</option>
+                                <option value="M" selected>Medium</option>
+                                <option value="L">Large</option>
+                                <option value="XL">Extra Large</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-2">Color</label>
+                            <select id="updateColor" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="Black">Black</option>
+                                <option value="White">White</option>
+                                <option value="Blue">Blue</option>
+                                <option value="Red">Red</option>
+                                <option value="Green">Green</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-2">Quantity</label>
+                            <div class="flex items-center gap-4">
+                                <button type="button" onclick="decrementUpdateQuantity()" class="w-12 h-12 bg-gray-200 rounded-lg hover:bg-gray-300 transition duration-300">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <input type="number" id="updateQuantity" value="1" min="1" class="w-20 text-center px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-lg">
+                                <button type="button" onclick="incrementUpdateQuantity()" class="w-12 h-12 bg-gray-200 rounded-lg hover:bg-gray-300 transition duration-300">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 mt-8">
+                            <button type="button" onclick="showCartView()" class="w-full border-2 border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition duration-300">
+                                Cancel
+                            </button>
+                            <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300">
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+    
+            <!-- VIEW 4: Remove Item Confirmation -->
+            <div id="removeItemView" class="cart-modal-view hidden">
+                <div class="login-pattern text-white py-6 px-6 relative">
+                    <h2 class="text-2xl font-bold">Remove Item</h2>
+                    <p class="mt-2">Are you sure?</p>
+                    <span class="close-btn" onclick="closeCartModal()">&times;</span>
+                </div>
+                
+                <div class="py-8 px-6">
+                    <div class="text-center mb-8">
+                        <i class="fas fa-exclamation-triangle text-yellow-500 text-6xl mb-4"></i>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">Remove this item?</h3>
+                        <div id="removeItemDetails" class="my-6 p-4 bg-gray-50 rounded-lg">
+                            <!-- Item details will be shown here -->
+                        </div>
+                        <p class="text-gray-600">This action cannot be undone.</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="showCartView()" class="w-full border-2 border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition duration-300">
+                            Cancel
+                        </button>
+                        <button onclick="confirmRemoveItem()" class="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition duration-300">
+                            <i class="fas fa-trash mr-2"></i>Remove Item
+                        </button>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- VIEW 5: Empty Cart Confirmation -->
+            <div id="emptyCartConfirmView" class="cart-modal-view hidden">
+                <div class="login-pattern text-white py-6 px-6 relative">
+                    <h2 class="text-2xl font-bold">Empty Cart</h2>
+                    <p class="mt-2">Clear all items</p>
+                    <span class="close-btn" onclick="closeCartModal()">&times;</span>
+                </div>
+                
+                <div class="py-8 px-6">
+                    <div class="text-center mb-8">
+                        <i class="fas fa-exclamation-circle text-red-500 text-6xl mb-4"></i>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">Empty your entire cart?</h3>
+                        <p class="text-gray-600 mb-4">All <span id="emptyCartCount" class="font-bold text-indigo-600">0</span> items will be removed from your cart.</p>
+                        <p class="text-gray-500 text-sm">This action cannot be undone.</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="showCartView()" class="w-full border-2 border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition duration-300">
+                            Cancel
+                        </button>
+                        <button onclick="confirmEmptyCart()" class="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition duration-300">
+                            <i class="fas fa-trash-alt mr-2"></i>Empty Cart
+                        </button>
+                    </div>
+                </div>
+            </div>
+    
+        </div>
+    </div>
+<!-- hero section -->
+<section class="relative h-screen overflow-hidden shadow-2xl">
+    <!-- Background Image with Overlay -->
+    <div class="absolute inset-0 w-full h-full">
+        <img src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" 
+             alt="Fashion Store" 
+             class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent"></div>
+    </div>
+    
+    <!-- Content Container with Inner Shadow -->
+    <div class="relative z-10 container mx-auto px-4 h-full flex items-center">
+        <div class="max-w-2xl text-white bg-black/20 backdrop-blur-sm p-8 md:p-12 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+            <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight drop-shadow-lg">
+                Welcome to <span class="text-indigo-400">Style</span><span class="text-pink-400">Hub</span>
+            </h1>
+            <p class="text-xl md:text-2xl mb-8 text-gray-200 drop-shadow-md">
+                Discover the latest fashion trends and express your unique style with our exclusive collections
+            </p>
+            <button class="bg-indigo-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-indigo-700 transform hover:scale-105 transition duration-300 shadow-lg hover:shadow-2xl">
+                Discover More <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Scroll Indicator -->
+    <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10 animate-bounce">
+        <i class="fas fa-chevron-down text-white text-2xl opacity-75"></i>
+    </div>
+</section>
+
+<!-- Categories Section -->
+<section class="py-16 bg-white">
+<div class="container mx-auto px-4">
+<h2 class="text-3xl font-bold text-center mb-4">Shop by Category</h2>
+<p class="text-center text-gray-600 mb-12">Browse through our diverse collection of clothing categories</p>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="category-card bg-white rounded-lg overflow-hidden shadow-md">
+<div class="relative h-64 overflow-hidden">
+<img src="https://images.unsplash.com/photo-1617137968427-85924c800a22?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=764&q=80"
+alt="Men's Fashion" class="category-image w-full h-full object-cover">
+<div class="category-overlay absolute inset-0 flex items-end p-6">
+<h3 class="text-white text-xl font-semibold">Men's Fashion</h3>
+</div>
+</div>
+<div class="p-6">
+<p class="text-gray-600 mb-4">Explore our collection of men's clothing including formal wear, casual outfits, and accessories.</p>
+<a href="#" class="inline-block text-indigo-600 font-semibold hover:text-indigo-800">
+Shop Men's Collection <i class="fas fa-arrow-right ml-2"></i>
+</a>
+</div>
+</div>
+<div class="category-card bg-white rounded-lg overflow-hidden shadow-md">
+<div class="relative h-64 overflow-hidden">
+<img src="https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80"
+alt="Women's Fashion" class="category-image w-full h-full object-cover">
+<div class="category-overlay absolute inset-0 flex items-end p-6">
+<h3 class="text-white text-xl font-semibold">Women's Fashion</h3>
+</div>
+</div>
+<div class="p-6">
+<p class="text-gray-600 mb-4">Discover trendy women's clothing including dresses, tops, bottoms, and accessories for every occasion.</p>
+<a href="#" class="inline-block text-indigo-600 font-semibold hover:text-indigo-800">
+Shop Women's Collection <i class="fas fa-arrow-right ml-2"></i>
+</a>
+</div>
+</div>
+<div class="category-card bg-white rounded-lg overflow-hidden shadow-md">
+<div class="relative h-64 overflow-hidden">
+<img src="https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80"
+alt="Kids' Fashion" class="category-image w-full h-full object-cover">
+<div class="category-overlay absolute inset-0 flex items-end p-6">
+<h3 class="text-white text-xl font-semibold">Kids' Fashion</h3>
+</div>
+</div>
+<div class="p-6">
+<p class="text-gray-600 mb-4">Adorable and comfortable clothing for children of all ages, from newborns to teenagers.</p>
+<a href="#" class="inline-block text-indigo-600 font-semibold hover:text-indigo-800">
+Shop Kids' Collection <i class="fas fa-arrow-right ml-2"></i>
+</a>
+</div>
+</div>
+<div class="category-card bg-white rounded-lg overflow-hidden shadow-md">
+<div class="relative h-64 overflow-hidden">
+<img src="https://images.unsplash.com/photo-1595341888016-a392ef81b7de?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1479&q=80"
+alt="Accessories" class="category-image w-full h-full object-cover">
+<div class="category-overlay absolute inset-0 flex items-end p-6">
+<h3 class="text-white text-xl font-semibold">Accessories</h3>
+</div>
+</div>
+<div class="p-6">
+<p class="text-gray-600 mb-4">Complete your look with our selection of fashion accessories and jewelry.</p>
+<a href="#" class="inline-block text-indigo-600 font-semibold hover:text-indigo-800">
+Shop Accessories <i class="fas fa-arrow-right ml-2"></i>
+</a>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- Featured Products -->
+<section class="py-16 bg-gray-50">
+<div class="container mx-auto px-4">
+<h2 class="text-3xl font-bold text-center mb-4">Featured Products</h2>
+<p class="text-center text-gray-600 mb-12">Discover our most popular items this season</p>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+<!-- Product 1 -->
+<div class="product-card bg-white rounded-lg overflow-hidden shadow-md transition duration-300">
+<div class="relative">
+<img src="https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80" alt="Summer Dress" class="w-full h-64 object-cover">
+<span class="absolute top-4 right-4 bg-pink-500 text-white text-xs px-2 py-1 rounded-full">NEW</span>
+</div>
+<div class="p-4">
+<h3 class="font-semibold text-lg mb-1">Floral Summer Dress</h3>
+<div class="flex items-center mb-2">
+<div class="flex text-yellow-400">
+<i class="fas fa-star"></i>
+<i class="fas fa-star"></i>
+<i class="fas fa-star"></i>
+<i class="fas fa-star"></i>
+<i class="fas fa-star-half-alt"></i>
+</div>
+<span class="text-gray-600 text-sm ml-2">(4.5)</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-indigo-600 font-bold">$49.99</span>
+<button class="bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700 transition duration-300">
+<i class="fas fa-shopping-cart"></i>
+</button>
+</div>
+</div>
+</div>
+<!-- Product 2 -->
+<div class="product-card bg-white rounded-lg overflow-hidden shadow-md transition duration-300">
+<div class="relative">
+<img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1480&q=80" alt="Denim Jacket" class="w-full h-64 object-cover">
+<span class="absolute top-4 right-4 bg-red-500 text-white text-xs px-2 py-1 rounded-full">SALE</span>
+</div>
+<div class="p-4">
+<h3 class="font-semibold text-lg mb-1">Classic Denim Jacket</h3>
+<div class="flex items-center mb-2">
+<div class="flex text-yellow-400">
+<i class="fas fa-star"></i>
+<i class="fas fa-star"></i>
+<i class="fas fa-star"></i>
+<i class="fas fa-star"></i>
+<i class="far fa-star"></i>
+</div>
+<span class="text-gray-600 text-sm ml-2">(4.0)</span>
+</div>
+<div class="flex justify-between items-center">
+<div>
+<span class="text-indigo-600 font-bold">$59.99</span>
+<span class="text-gray-400 text-sm line-through ml-2">$79.99</span>
+</div>
+<button class="bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700 transition duration-300">
+<i class="fas fa-shopping-cart"></i>
+</button>
+</div>
+</div>
+</div>
+<!-- Product 3 -->
+<div class="product-card bg-white rounded-lg overflow-hidden shadow-md transition duration-300">
+<img src="https://images.unsplash.com/photo-1618932260643-eee4a2f652a6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=780&q=80" alt="Casual Shirt" class="w-full h-64 object-cover">
+<div class="p-4">
+<h3 class="font-semibold text-lg mb-1">Linen Casual Shirt</h3>
+<div class="flex items-center mb-2">
+<div class="flex text-yellow-400">
+<i class="fas fa-star"></i>
+<i class="fas fa-star"></i>
+<i class="fas fa-star"></i>
+<i class="fas fa-star"></i>
+<i class="fas fa-star"></i>
+</div>
+<span class="text-gray-600 text-sm ml-2">(5.0)</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-indigo-600 font-bold">$39.99</span>
+<button class="bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700 transition duration-300">
+<i class="fas fa-shopping-cart"></i>
+</button>
+</div>
+</div>
+</div>
+<!-- Product 4 -->
+<div class="product-card bg-white rounded-lg overflow-hidden shadow-md transition duration-300">
+<img src="https://images.unsplash.com/photo-1591047139829-d91aecb6caea?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=736&q=80" alt="Sports Shoes" class="w-full h-64 object-cover">
+<div class="p-4">
+<h3 class="font-semibold text-lg mb-1">Running Sports Shoes</h3>
+<div class="flex items-center mb-2">
+<div class="flex text-yellow-400">
+<i class="fas fa-star"></i>
+<i class="fas fa-star"></i>
+<i class="fas fa-star"></i>
+<i class="fas fa-star"></i>
+<i class="fas fa-star-half-alt"></i>
+</div>
+<span class="text-gray-600 text-sm ml-2">(4.5)</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-indigo-600 font-bold">$89.99</span>
+<button class="bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700 transition duration-300">
+<i class="fas fa-shopping-cart"></i>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="text-center mt-12">
+<a href="#" class="inline-block bg-indigo-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-indigo-700 transition duration-300">View All Products</a>
+</div>
+</div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-gray-800 text-white py-12">
+<div class="container mx-auto px-4">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+<div>
+<h3 class="text-xl font-bold mb-4 text-indigo-400">Style<span class="text-pink-400">Hub</span></h3>
+<p class="text-gray-400">Your one-stop destination for all fashion needs. Quality clothing for every style and occasion.</p>
+</div>
+<div>
+<h4 class="text-lg font-semibold mb-4">Quick Links</h4>
+<ul class="space-y-2">
+<li><a href="#" class="text-gray-400 hover:text-white">About Us</a></li>
+<li><a href="#" class="text-gray-400 hover:text-white">Contact Us</a></li>
+<li><a href="#" class="text-gray-400 hover:text-white">FAQs</a></li>
+<li><a href="#" class="text-gray-400 hover:text-white">Shipping & Returns</a></li>
+</ul>
+</div>
+<div>
+<h4 class="text-lg font-semibold mb-4">Categories</h4>
+<ul class="space-y-2">
+<li><a href="#" class="text-gray-400 hover:text-white">Men's Fashion</a></li>
+<li><a href="#" class="text-gray-400 hover:text-white">Women's Fashion</a></li>
+<li><a href="#" class="text-gray-400 hover:text-white">Kids' Fashion</a></li>
+<li><a href="#" class="text-gray-400 hover:text-white">Accessories</a></li>
+</ul>
+</div>
+<div>
+<h4 class="text-lg font-semibold mb-4">Connect With Us</h4>
+<div class="flex space-x-4 mb-4">
+<a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-facebook-f text-lg"></i></a>
+<a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-instagram text-lg"></i></a>
+<a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-twitter text-lg"></i></a>
+<a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-pinterest-p text-lg"></i></a>
+</div>
+<p class="text-gray-400">Sign up for exclusive offers</p>
+</div>
+</div>
+<div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+<p>&copy; 2023 StyleHub. All rights reserved.</p>
+</div>
+</div>
+</footer>
+
+<script>
+    // Get all modal elements
+    const loginModal = document.getElementById('loginModal');
+    const signupModal = document.getElementById('signupModal');
+    const generateCodeModal = document.getElementById('generateCodeModal');
+    const verifyCodeModal = document.getElementById('verifyCodeModal');
+    const setNewPasswordModal = document.getElementById('setNewPasswordModal');
+
+    // Get all buttons/links
+    const showLoginBtn = document.getElementById('showLogin');
+    const closeBtns = document.querySelectorAll('.close-btn');
+    const showSignupLink = document.getElementById('showSignup');
+    const showLoginFromSignup = document.getElementById('showLoginFromSignup');
+    const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+    const showLoginFromGenerateCode = document.getElementById('showLoginFromGenerateCode');
+    const resendCodeLink = document.getElementById('resendCode');
+
+    // Helper functions
+    function openModal(modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeAllModals() {
+        loginModal.style.display = 'none';
+        signupModal.style.display = 'none';
+        generateCodeModal.style.display = 'none';
+        verifyCodeModal.style.display = 'none';
+        setNewPasswordModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+    
+    function getCSRFToken() {
+        const csrfElement = document.querySelector('[name="csrfmiddlewaretoken"]');
+        return csrfElement ? csrfElement.value : '';
+    }
+
+    function displayErrors(errorDivId, message) {
+        const errorDiv = document.getElementById(errorDivId);
+        if (errorDiv) {
+            const messageElement = errorDiv.querySelector('p') || errorDiv; 
+            messageElement.innerHTML = message;
+            errorDiv.classList.remove('hidden');
+        }
+    }
+
+    function hideErrors(errorDivId) {
+        const errorDiv = document.getElementById(errorDivId);
+        if (errorDiv) {
+            errorDiv.classList.add('hidden');
+        }
+    }
+
+    // Form validation functions
+    function validateEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    }
+
+    function validatePassword(password) {
+        // At least 8 characters, one uppercase, one number
+        const re = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/;
+        return re.test(password);
+    }
+
+    function validatePhone(phone) {
+        // Basic phone validation (digits, spaces, hyphens allowed)
+        const re = /^[\d\s\-+()]{7,15}$/;
+        return re.test(phone.trim());
+    }
+
+    function clearFieldErrors() {
+        const errorSpans = document.querySelectorAll('[id$="_error"]');
+        errorSpans.forEach(span => {
+            span.classList.add('hidden');
+            span.textContent = '';
+        });
+        
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.classList.remove('field-error', 'field-success');
+        });
+    }
+
+    function showFieldError(fieldId, message) {
+        const field = document.getElementById(fieldId);
+        const errorSpan = document.getElementById(fieldId + '_error');
+        
+        if (field) {
+            field.classList.add('field-error');
+            field.classList.remove('field-success');
+        }
+        
+        if (errorSpan) {
+            errorSpan.textContent = message;
+            errorSpan.classList.remove('hidden');
+        }
+    }
+
+    function showFieldSuccess(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.classList.add('field-success');
+            field.classList.remove('field-error');
+        }
+    }
+
+    function validateSignupForm() {
+        clearFieldErrors();
+        let isValid = true;
+
+        // Get form values
+        const firstName = document.getElementById('first_name').value.trim();
+        const lastName = document.getElementById('last_name').value.trim();
+        const emaipytl = document.getElementById('email').value.trim();
+        const phoneNumber = document.getElementById('phone_number').value.trim();
+        const password = document.getElementById('password_signup').value;
+        const passwordConfirm = document.getElementById('password_confirm').value;
+
+        // Validate first name
+        if (!firstName) {
+            showFieldError('first_name', 'First name is required');
+            isValid = false;
+        } else if (firstName.length < 2) {
+            showFieldError('first_name', 'First name must be at least 2 characters');
+            isValid = false;
+        } else {
+            showFieldSuccess('first_name');
+        }
+
+        // Validate last name
+        if (!lastName) {
+            showFieldError('last_name', 'Last name is required');
+            isValid = false;
+        } else if (lastName.length < 2) {
+            showFieldError('last_name', 'Last name must be at least 2 characters');
+            isValid = false;
+        } else {
+            showFieldSuccess('last_name');
+        }
+
+        // Validate email
+        if (!email) {
+            showFieldError('email', 'Email is required');
+            isValid = false;
+        } else if (!validateEmail(email)) {
+            showFieldError('email', 'Please enter a valid email address');
+            isValid = false;
+        } else {
+            showFieldSuccess('email');
+        }
+
+        // Validate phone number
+        if (!phoneNumber) {
+            showFieldError('phone_number', 'Phone number is required');
+            isValid = false;
+        } else if (!validatePhone(phoneNumber)) {
+            showFieldError('phone_number', 'Please enter a valid phone number');
+            isValid = false;
+        } else {
+            showFieldSuccess('phone_number');
+        }
+
+        // Validate password
+        if (!password) {
+            showFieldError('password_signup', 'Password is required');
+            isValid = false;
+        } else if (!validatePassword(password)) {
+            showFieldError('password_signup', 'Password must be at least 8 characters with uppercase, lowercase, and number');
+            isValid = false;
+        } else {
+            showFieldSuccess('password_signup');
+        }
+
+        // Validate password confirmation
+        if (!passwordConfirm) {
+            showFieldError('password_confirm', 'Password confirmation is required');
+            isValid = false;
+        } else if (password !== passwordConfirm) {
+            showFieldError('password_confirm', 'Passwords do not match');
+            isValid = false;
+        } else if (password) {
+            showFieldSuccess('password_confirm');
+        }
+
+        return isValid;
+    }
+
+    async function apiFetch(form) {
+        const formData = new FormData(form);
+        
+        // Debug: Log what we're sending
+        console.log('Form data being sent:');
+        for (let [key, value] of formData.entries()) {
+            // console.log(`${key}: ${value}`);
+        }
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+            console.log('Server response:', result);
+            return { ok: response.ok, result, status: response.status };
+
+        } catch (error) {
+            console.error('Network or JSON Parsing Error:', error);
+            return { ok: false, result: { message: 'An error occurred. Check your connection.' }, status: 500 };
+        }
+    }
+
+    // --- MODAL TRANSITION HANDLERS ---
+    
+    showLoginBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeAllModals();
+        openModal(loginModal);
+    });
+
+    closeBtns.forEach(btn => {
+        btn.addEventListener('click', closeAllModals);
+    });
+
+    showSignupLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeAllModals();
+        openModal(signupModal);
+    });
+
+    showLoginFromSignup.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeAllModals();
+        openModal(loginModal);
+    });
+
+    forgotPasswordLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeAllModals();
+        openModal(generateCodeModal);
+    });
+    
+    showLoginFromGenerateCode.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeAllModals();
+        openModal(loginModal);
+    });
+    
+    resendCodeLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeAllModals();
+        openModal(generateCodeModal);
+    });
+
+    // Close modals when clicking outside or pressing Escape
+    window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('login-modal')) {
+            closeAllModals();
+        }
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeAllModals();
+        }
+    });
+
+    // Real-time validation for signup form
+    const signupFields = ['first_name', 'last_name', 'email', 'phone_number', 'password_signup', 'password_confirm'];
+    
+    signupFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        
+            
+            // Real-time password matching
+            if (fieldId === 'password_confirm' || fieldId === 'password_signup') {
+                field.addEventListener('input', () => {
+                    const password = document.getElementById('password_signup').value;
+                    const passwordConfirm = document.getElementById('password_confirm').value;
+                    
+                    if (passwordConfirm && password !== passwordConfirm) {
+                        showFieldError('password_confirm', 'Passwords do not match');
+                    } else if (passwordConfirm && password === passwordConfirm) {
+                        document.getElementById('password_confirm_error').classList.add('hidden');
+                        showFieldSuccess('password_confirm');
+                    }
+                });
+            }
+        }
+    });
+
+    // --- FORM SUBMISSION LOGIC ---
+
+    // 1. LOGIN FORM
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideErrors('error-message');
+
+        const { ok, result, status } = await apiFetch(e.target);
+
+        if (ok) {
+            if (result.redirect_url) {
+                window.location.href = result.redirect_url;
+            }
+        } else if (status === 400) {
+            displayErrors('error-message', result.message || 'Invalid credentials.');
+        } else {
+            displayErrors('error-message', result.message || `Server Error (${status})`);
+        }
+    });
+
+    // 2. SIGNUP FORM - Completely rewritten with proper debugging
+    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideErrors('signup-error-message');
+        clearFieldErrors();
+        
+        // Get the form element
+        const form = e.target;
+        
+        // Create FormData and manually add all fields to ensure they're included
+        const formData = new FormData();
+        
+        // Add CSRF token
+        const csrfToken = getCSRFToken();
+        if (csrfToken) {
+            formData.append('csrfmiddlewaretoken', csrfToken);
+        }
+        
+        // Manually collect and add all form fields
+        const firstName = document.getElementById('first_name').value.trim();
+        const lastName = document.getElementById('last_name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const countryCode = document.getElementById('country_code').value;
+        const phoneNumber = document.getElementById('phone_number').value.trim();
+        const password = document.getElementById('password_signup').value;
+        const passwordConfirm = document.getElementById('password_confirm').value;
+        
+        formData.append('first_name', firstName);
+        formData.append('last_name', lastName);
+        formData.append('email', email);
+        formData.append('country_code', countryCode);
+        formData.append('phone_number', phoneNumber);
+        formData.append('password', password);
+        formData.append('password_confirm', passwordConfirm);
+        
+        // Debug: Log what we're sending
+        console.log('Form data being sent:');
+        for (let [key, value] of formData.entries()) {
+            console.log(`${key}: "${value}"`);
+        }
+        
+        // Basic validation before sending
+        let hasErrors = false;
+        
+        if (!firstName) {
+            showFieldError('first_name', 'First name is required');
+            hasErrors = true;
+        }
+        if (!lastName) {
+            showFieldError('last_name', 'Last name is required');
+            hasErrors = true;
+        }
+        if (!email) {
+            showFieldError('email', 'Email is required');
+            hasErrors = true;
+        }
+        if (!phoneNumber) {
+            showFieldError('phone_number', 'Phone number is required');
+            hasErrors = true;
+        }
+        if (!password) {
+            showFieldError('password_signup', 'Password is required');
+            hasErrors = true;
+        }
+        if (!passwordConfirm) {
+            showFieldError('password_confirm', 'Password confirmation is required');
+            hasErrors = true;
+        }
+        if (password !== passwordConfirm) {
+            showFieldError('password_confirm', 'Passwords do not match');
+            hasErrors = true;
+        }
+        
+        if (hasErrors) {
+            displayErrors('signup-error-message', 'Please fill in all required fields correctly.');
+            return;
+        }
+
+        // Disable submit button
+        const submitBtn = document.getElementById('signup-submit-btn');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Creating Account...';
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+            console.log('Server response:', result);
+            
+            if (response.ok) {
+                closeAllModals();
+                openModal(loginModal); 
+                displayErrors('error-message', '<strong>Success!</strong> Registration successful. Please log in.');
+            } else {
+                let errorMessage = result.message || 'Registration failed.';
+                
+                if (result.errors && typeof result.errors === 'object') {
+                    let detailedMessage = '<strong>Please correct the following issues:</strong><br>'; 
+                    
+                    for (const field in result.errors) {
+                        if (result.errors.hasOwnProperty(field) && field !== 'message') {
+                            const readableField = field.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                            const fieldError = Array.isArray(result.errors[field]) ? result.errors[field][0] : result.errors[field];
+                            
+                            if (typeof fieldError === 'string') {
+                                detailedMessage += `&bull; <strong>${readableField}</strong>: ${fieldError}<br>`;
+                                
+                                // Show individual field errors
+                                if (document.getElementById(field)) {
+                                    showFieldError(field, fieldError);
+                                }
+                            }
+                        }
+                    }
+                    errorMessage = detailedMessage;
+                }
+
+                displayErrors('signup-error-message', errorMessage);
+            }
+        } catch (error) {
+            console.error('Request failed:', error);
+            displayErrors('signup-error-message', 'Network error occurred. Please try again.');
+        } finally {
+            // Re-enable submit button
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    });
+
+    // 3. GENERATE CODE FORM (Forgot Password)
+    document.getElementById('generate-code-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideErrors('generate-code-error-message');
+
+        const { ok, result, status } = await apiFetch(e.target);
+
+        if (ok) {
+            closeAllModals();
+            openModal(verifyCodeModal);
+        } else if (status === 400) {
+            displayErrors('generate-code-error-message', result.message || 'Could not process request.');
+        } else {
+            displayErrors('generate-code-error-message', result.message || `Server Error (${status})`);
+        }
+    });
+
+    // 4. VERIFY CODE FORM
+    document.getElementById('verify-code-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideErrors('verify-code-error-message');
+
+        const { ok, result, status } = await apiFetch(e.target);
+
+        if (ok) {
+            closeAllModals();
+            openModal(setNewPasswordModal);
+        } else if (status === 400) {
+            displayErrors('verify-code-error-message', result.message || 'Invalid or expired code.');
+        } else {
+            displayErrors('verify-code-error-message', result.message || `Server Error (${status})`);
+        }
+    });
+
+    // 5. SET NEW PASSWORD FORM
+    document.getElementById('set-new-password-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideErrors('set-password-error-message');
+
+        const { ok, result, status } = await apiFetch(e.target);
+
+        if (ok) {
+            if (result.redirect_url) {
+                window.location.href = result.redirect_url;
+            } else {
+                closeAllModals();
+                openModal(loginModal);
+                displayErrors('error-message', `<strong>Success:</strong> ${result.message || 'Password updated successfully!'}`);
+            }
+        } else if (status === 400) {
+            displayErrors('set-password-error-message', result.message || 'Validation failed. Check passwords and requirements.');
+        } else {
+            displayErrors('set-password-error-message', result.message || `Server Error (${status})`);
+        }
+    });
+</script>
+</body>
+</html>
