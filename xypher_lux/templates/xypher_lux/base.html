@@ -1,36 +1,548 @@
+
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}My Shop{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>{% block title %}XypherLux{% endblock %}</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Global Stylesheet -->
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <style>
+    </style>
+
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'xypher_lux:product_list' %}">My Shop</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'xypher_lux:product_list' %}">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Cart</a>
-                    </li>
-                </ul>
+
+    <!-- ====== SITE HEADER ====== -->
+    <header class="site-header">
+        <div class="container header-inner">
+
+            <!-- Logo -->
+            <a href="{% url 'xypher_lux:product_list' %}" class="site-logo">
+                <span class="logo-first">Xypher</span><span class="logo-second">Lux</span>
+            </a>
+
+            <!-- Desktop Nav -->
+            <nav class="main-nav" aria-label="Main navigation">
+                <a href="{% url 'xypher_lux:product_list' %}">Home</a>
+                <a href="{% url 'xypher_lux:mens_collection' %}">Men</a>
+                <a href="{% url 'xypher_lux:women_collection' %}">Women</a>
+                <a href="#">Kids</a>
+                <a href="#">Sale</a>
+            </nav>
+
+            <!-- Actions -->
+            <div class="header-actions">
+                <form method="GET" action="{% url 'xypher_lux:search' %}" class="header-search-form">                   <input type="text"
+                           name="q"
+                           placeholder="Search products..."
+                           class="header-search-input"
+                           id="headerSearchInput">
+                    <button type="submit" class="header-icon-btn" aria-label="Search">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+
+                <button class="header-icon-btn" id="openCartBtn" aria-label="Cart">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span class="cart-badge" id="headerCartCount">0</span>
+                </button>
+
+                <button class="header-icon-btn" id="showLogin" aria-label="Account">
+                    <i class="fas fa-user"></i>
+                </button>
+
+                <button class="mobile-menu-btn" aria-label="Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- ====== DJANGO MESSAGES ====== -->
+    {% if messages %}
+    <div class="messages-container" role="alert" aria-live="polite">
+        {% for message in messages %}
+        <div class="message-toast message-toast--{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+
+    <!-- ====================================================
+         AUTH MODALS
+    ===================================================== -->
+
+    <!-- LOGIN MODAL -->
+    <div class="modal-overlay" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2 id="loginTitle">Welcome Back</h2>
+                <p>Sign in to your account</p>
+                <button class="modal-close" data-close-modal>&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="alert alert--error" id="loginError" role="alert"></div>
+
+                <form id="loginForm" method="POST" action="{% url 'xypher_lux:login_view' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="loginUsername">Username or Email</label>
+                        <input type="text" id="loginUsername" name="username" class="form-control"
+                               placeholder="Enter your username or email" autocomplete="username">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" name="password" class="form-control"
+                               placeholder="Enter your password" autocomplete="current-password">
+                        <a href="#" class="form-link" id="forgotPasswordLink">Forgot password?</a>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <button type="submit" class="btn btn-primary btn-full">Sign In</button>
+                    </div>
+                </form>
+
+                <p class="modal-footer-text">
+                    Don't have an account?
+                    <a href="#" id="showSignup">Sign up</a>
+                </p>
             </div>
         </div>
-    </nav>
-    
-    <div class="container mt-4">
-        {% block content %}
-        {% endblock %}
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+
+    <!-- SIGNUP MODAL -->
+    <div class="modal-overlay" id="signupModal" role="dialog" aria-modal="true" aria-labelledby="signupTitle">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2 id="signupTitle">Create an Account</h2>
+                <p>Join us and discover the latest fashion trends</p>
+                <button class="modal-close" data-close-modal>&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="alert alert--error" id="signupError" role="alert"></div>
+
+                <form id="signupForm" method="POST" action="{% url 'xypher_lux:signup_view' %}">
+                    {% csrf_token %}
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="first_name">First Name *</label>
+                            <input type="text" id="first_name" name="first_name" class="form-control"
+                                   placeholder="First name" required>
+                            <span class="field-error-msg" id="first_name_error"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="last_name">Last Name *</label>
+                            <input type="text" id="last_name" name="last_name" class="form-control"
+                                   placeholder="Last name" required>
+                            <span class="field-error-msg" id="last_name_error"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email *</label>
+                        <input type="email" id="email" name="email" class="form-control"
+                               placeholder="your@email.com" required>
+                        <span class="field-error-msg" id="email_error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone_number">Phone Number *</label>
+                        <div class="phone-group">
+                            <select id="country_code" name="country_code" class="form-control">
+                                <option value="+1">+1 (USA)</option>
+                                <option value="+44">+44 (UK)</option>
+                                <option value="+254" selected>+254 (KEN)</option>
+                            </select>
+                            <input type="tel" id="phone_number" name="phone_number" class="form-control"
+                                   placeholder="712 345 678" required>
+                        </div>
+                        <span class="field-error-msg" id="phone_number_error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password_signup">Password *</label>
+                        <input type="password" id="password_signup" name="password" class="form-control"
+                               placeholder="Create a strong password" required>
+                        <p class="form-hint">Min. 8 characters, one uppercase, one number.</p>
+                        <span class="field-error-msg" id="password_signup_error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password_confirm">Confirm Password *</label>
+                        <input type="password" id="password_confirm" name="password_confirm" class="form-control"
+                               placeholder="Repeat your password" required>
+                        <span class="field-error-msg" id="password_confirm_error"></span>
+                    </div>
+
+                    <button type="submit" id="signupSubmitBtn" class="btn btn-primary btn-full">
+                        Create Account
+                    </button>
+                </form>
+
+                <p class="modal-footer-text">
+                    Already have an account?
+                    <a href="#" id="showLoginFromSignup">Sign in</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- FORGOT PASSWORD MODAL -->
+    <div class="modal-overlay" id="generateCodeModal" role="dialog" aria-modal="true" aria-labelledby="forgotTitle">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2 id="forgotTitle">Forgot Password?</h2>
+                <p>Enter your email to receive a reset code.</p>
+                <button class="modal-close" data-close-modal>&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="alert alert--error" id="generateCodeError" role="alert"></div>
+
+                <form id="generateCodeForm" method="POST" action="{% url 'xypher_lux:forgot_password' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="forgot_email">Email Address</label>
+                        <input type="email" id="forgot_email" name="email" class="form-control"
+                               placeholder="your@email.com">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full">Send Reset Code</button>
+                </form>
+
+                <p class="modal-footer-text">
+                    Remember it?
+                    <a href="#" id="showLoginFromGenerateCode">Sign in</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- VERIFY CODE MODAL -->
+    <div class="modal-overlay" id="verifyCodeModal" role="dialog" aria-modal="true" aria-labelledby="verifyTitle">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2 id="verifyTitle">Verify Your Code</h2>
+                <p>A 5-digit code was sent to your email.</p>
+                <button class="modal-close" data-close-modal>&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="alert alert--error" id="verifyCodeError" role="alert"></div>
+
+                <form id="verifyCodeForm" method="POST" action="{% url 'xypher_lux:verify_code' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="verification_code">Verification Code</label>
+                        <input type="text" id="verification_code" name="code" class="form-control"
+                               placeholder="e.g. 12345" maxlength="5"
+                               style="text-align:center;font-size:1.5rem;font-weight:700;letter-spacing:0.3em;">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full">Verify Code</button>
+                </form>
+
+                <p class="modal-footer-text">
+                    Didn't get a code?
+                    <a href="#" id="resendCode">Resend</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- SET NEW PASSWORD MODAL -->
+    <div class="modal-overlay" id="setNewPasswordModal" role="dialog" aria-modal="true" aria-labelledby="newPwTitle">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2 id="newPwTitle">Set New Password</h2>
+                <p>Create a strong new password for your account.</p>
+                <button class="modal-close" data-close-modal>&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="alert alert--error" id="setPasswordError" role="alert"></div>
+
+                <form id="setNewPasswordForm" method="POST" action="{% url 'xypher_lux:set_new_password' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="new_password">New Password</label>
+                        <input type="password" id="new_password" name="new_password" class="form-control"
+                               placeholder="Enter new password">
+                        <p class="form-hint">Min. 8 characters, one uppercase, one number.</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirm_new_password">Confirm New Password</label>
+                        <input type="password" id="confirm_new_password" name="confirm_new_password"
+                               class="form-control" placeholder="Repeat new password">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full">Update Password</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ====================================================
+         CART MODAL
+    ===================================================== -->
+    <div class="modal-overlay" id="cartModal" role="dialog" aria-modal="true" aria-label="Shopping Cart">
+        <div class="modal-box modal-box--wide">
+
+            <!-- VIEW 1: Cart Items -->
+            <div id="cartView" class="cart-modal-view">
+                <div class="modal-header">
+                    <h2>Shopping Cart</h2>
+                    <p id="cartItemCount">0 items in your cart</p>
+                    <button class="modal-close" onclick="closeCartModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="cart-items-container" id="cartItemsContainer"></div>
+
+                    <div class="cart-summary">
+                        <div class="cart-summary-table">
+                            <div class="cart-summary-row">
+                                <span>Subtotal</span>
+                                <span id="cartSubtotal">$0.00</span>
+                            </div>
+                            <div class="cart-summary-row">
+                                <span>Shipping</span>
+                                <span id="cartShipping">$5.00</span>
+                            </div>
+                            <div class="cart-summary-row">
+                                <span>Tax (8%)</span>
+                                <span id="cartTax">$0.00</span>
+                            </div>
+                            <div class="cart-summary-row cart-summary-row--total">
+                                <span class="cart-total-label">Total</span>
+                                <span class="cart-total-value" id="cartTotal">$0.00</span>
+                            </div>
+                        </div>
+
+                        <div class="btn-grid-3">
+                            <button class="btn btn-outline-danger" onclick="showEmptyCartConfirm()">
+                                <i class="fas fa-trash"></i> Empty Cart
+                            </button>
+                            <button class="btn btn-outline-primary" onclick="closeCartModal()">
+                                Continue Shopping
+                            </button>
+                            <button class="btn btn-primary" onclick="proceedToCheckout()">
+                                Checkout <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 2: Empty Cart -->
+            <div id="emptyCartView" class="cart-modal-view hidden">
+                <div class="modal-header">
+                    <h2>Shopping Cart</h2>
+                    <p>Your cart is empty</p>
+                    <button class="modal-close" onclick="closeCartModal()">&times;</button>
+                </div>
+                <div class="modal-body" style="text-align:center; padding: 3.5rem 2rem;">
+                    <div class="empty-cart-icon"><i class="fas fa-shopping-bag"></i></div>
+                    <h3 style="font-size:1.4rem;font-weight:700;color:var(--color-gray-700);margin-bottom:0.75rem;">Your cart is empty</h3>
+                    <p style="color:var(--color-gray-400);margin-bottom:2rem;">Add some items to get started!</p>
+                    <button class="btn btn-primary btn-pill btn-lg" onclick="closeCartModal()">
+                        <i class="fas fa-shopping-bag"></i> Start Shopping
+                    </button>
+                </div>
+            </div>
+
+            <!-- VIEW 3: Update Item -->
+            <div id="updateCartView" class="cart-modal-view hidden">
+                <div class="modal-header">
+                    <button class="modal-back-btn" onclick="showCartView()">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <h2>Update Item</h2>
+                    <p>Modify item details</p>
+                    <button class="modal-close" onclick="closeCartModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="updateItemDetails" class="cart-summary-table" style="margin-bottom:1.5rem;"></div>
+
+                    <form id="updateCartForm">
+                        <div class="form-group">
+                            <label>Size</label>
+                            <select id="updateSize" class="form-control">
+                                <option value="XS">Extra Small</option>
+                                <option value="S">Small</option>
+                                <option value="M" selected>Medium</option>
+                                <option value="L">Large</option>
+                                <option value="XL">Extra Large</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Color</label>
+                            <select id="updateColor" class="form-control">
+                                <option>Black</option>
+                                <option>White</option>
+                                <option>Blue</option>
+                                <option>Red</option>
+                                <option>Green</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Quantity</label>
+                            <div class="qty-control">
+                                <button type="button" class="qty-btn" onclick="decrementUpdateQuantity()">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <input type="number" id="updateQuantity" value="1" min="1"
+                                       class="form-control qty-input">
+                                <button type="button" class="qty-btn" onclick="incrementUpdateQuantity()">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="btn-grid-2" style="margin-top:1.5rem;">
+                            <button type="button" class="btn btn-gray" onclick="showCartView()">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- VIEW 4: Remove Item Confirm -->
+            <div id="removeItemView" class="cart-modal-view hidden">
+                <div class="modal-header">
+                    <h2>Remove Item</h2>
+                    <p>Are you sure?</p>
+                    <button class="modal-close" onclick="closeCartModal()">&times;</button>
+                </div>
+                <div class="modal-body" style="text-align:center;">
+                    <div class="confirm-icon" style="color:var(--color-warning);">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:0.5rem;">Remove this item?</h3>
+                    <div id="removeItemDetails" class="cart-summary-table" style="margin:1.5rem 0;"></div>
+                    <p style="color:var(--color-gray-500);font-size:0.875rem;margin-bottom:1.5rem;">This action cannot be undone.</p>
+                    <div class="btn-grid-2">
+                        <button class="btn btn-gray" onclick="showCartView()">Cancel</button>
+                        <button class="btn btn-danger" onclick="confirmRemoveItem()">
+                            <i class="fas fa-trash"></i> Remove
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 5: Empty Cart Confirm -->
+            <div id="emptyCartConfirmView" class="cart-modal-view hidden">
+                <div class="modal-header">
+                    <h2>Empty Cart</h2>
+                    <p>Clear all items</p>
+                    <button class="modal-close" onclick="closeCartModal()">&times;</button>
+                </div>
+                <div class="modal-body" style="text-align:center;">
+                    <div class="confirm-icon" style="color:var(--color-danger);">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:0.5rem;">Empty your entire cart?</h3>
+                    <p style="color:var(--color-gray-600);margin-bottom:0.5rem;">
+                        All <strong id="emptyCartCount" style="color:var(--color-primary);">0</strong> items will be removed.
+                    </p>
+                    <p style="color:var(--color-gray-400);font-size:0.8rem;margin-bottom:1.5rem;">This action cannot be undone.</p>
+                    <div class="btn-grid-2">
+                        <button class="btn btn-gray" onclick="showCartView()">Cancel</button>
+                        <button class="btn btn-danger" onclick="confirmEmptyCart()">
+                            <i class="fas fa-trash-alt"></i> Empty Cart
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- ====== MAIN CONTENT ====== -->
+    <main class="site-main">
+        {% block content %}{% endblock %}
+    </main>
+
+
+    <!-- ====== FOOTER ====== -->
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="{% url 'xypher_lux:product_list' %}" class="site-logo">
+                        <span class="logo-first">Xypher</span><span class="logo-second">Lux</span>
+                    </a>
+                    <p>Your destination for premium fashion. Quality clothing for every style and occasion.</p>
+                </div>
+
+                <div class="footer-col">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="#">About Us</a></li>
+                        <li><a href="#">Contact Us</a></li>
+                        <li><a href="#">FAQs</a></li>
+                        <li><a href="#">Shipping & Returns</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h4>Categories</h4>
+                    <ul>
+                        <li><a href="#">Men's Fashion</a></li>
+                        <li><a href="#">Women's Fashion</a></li>
+                        <li><a href="#">Kids' Fashion</a></li>
+                        <li><a href="#">Accessories</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h4>Follow Us</h4>
+                    <div class="footer-social">
+                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" aria-label="Pinterest"><i class="fab fa-pinterest-p"></i></a>
+                    </div>
+                    <p style="color:var(--color-gray-400);font-size:0.9rem;">Sign up for exclusive offers</p>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; {% now "Y" %} XypherLux. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Main JS -->
+    {% load static %}
+    <script src="{% static 'js/main.js' %}"></script>
+
+    {% block extra_js %}{% endblock %}
+
 </body>
 </html>

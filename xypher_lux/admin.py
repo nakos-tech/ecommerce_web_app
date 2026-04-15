@@ -4,23 +4,30 @@ from .models import Category, Product, Order, OrderItem, Cart, CartItem
 # Register your models here.
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ["name", "slug"]
+    list_display = ["name","parent", "slug"]
+    list_filter = ["parent"]
+    search_fields = ["name"]
     prepopulated_fields = {"slug": ("name",)}
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ['name', 'category', 'price', 'stock', 'is_active', 'created_at']
-    list_filter = ['category', 'is_active', 'created_at']
-    search_fields = ['name', 'description']
-    list_editable = ['price', 'stock', 'is_active']
-    readonly_fields = ['created_at', 'updated_at']
-    
+    list_display        = ['name', 'category', 'price', 'stock', 'is_featured', 'is_active', 'created_at']
+    list_filter         = ['category', 'is_active', 'created_at']
+    search_fields       = ['name', 'description']
+    list_editable       = ['price', 'stock','is_featured', 'is_active']
+    readonly_fields     = ['created_at', 'updated_at']
+
+    def get_prepopulated_fields(self, request, obj=None):
+        if obj:
+            return {}
+        return {'slug': ('name',)}
+
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'description', 'category', 'image')
+            'fields': ('name', 'slug', 'description', 'category', 'image')
         }),
         ('Pricing & Stock', {
-            'fields': ('price', 'stock', 'is_active')
+            'fields': ('price', 'stock', 'is_featured', 'is_active')
         }),
         ('Product Options', {
             'fields': ('available_sizes', 'available_colors')
@@ -30,7 +37,6 @@ class ProductAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-
 
 class CartItemInline(admin.TabularInline):
     model = CartItem

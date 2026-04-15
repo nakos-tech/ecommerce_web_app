@@ -100,12 +100,12 @@ class AddToCartForm(forms.Form):
 
         if product:
             # Dynamically set size choices based on product sizes
-            if prosduct.available_sizes:
-                sizes = [(s.strip(), s.strip()) for s in product.available_sizes.split('')]
+            if product.available_sizes:
+                sizes = [(s.strip(), s.strip()) for s in product.available_sizes.split(',')]
                 self.fields['size'].choices = [('','Select Size')] + sizes
 
             if product.available_colors:
-                colors = [(s.strip(), s.strip()) for c in product.available_colors.split(',')]
+                colors = [(c.strip(), c.strip()) for c in product.available_colors.split(',')]
                 self.fields['color'].choices = [('', 'Select Color')] + colors
 
     def clean_quantity(self):
@@ -135,7 +135,7 @@ class UpdateCartItemForm(forms.ModelForm):
         if hasattr(self.instance, "product"):
             if quantity > self.instance.product.stock:
                 raise forms.ValidationError(
-                    f"only {self.indtance.product.stock} items available"
+                    f"only {self.instance.product.stock} items available"
                 )
         return quantity
     

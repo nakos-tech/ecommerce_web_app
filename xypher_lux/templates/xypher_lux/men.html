@@ -1,0 +1,180 @@
+
+{% extends 'xypher_lux/base.html' %}
+{% load static %}
+
+{% block title %}Men's Collection — XypherLux{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mens.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="collection-hero">
+    <div class="hero-bg">
+        <img src="https://images.unsplash.com/photo-1516257984-b1b4d707412e?auto=format&fit=crop&w=2070&q=80"
+             alt="Men's Collection">
+        <div class="hero-dim"></div>
+    </div>
+
+    <div class="hero-body">
+        <div class="container">
+            <div class="hero-heading">
+                <h1>Men's Collection</h1>
+                <p>Premium clothing crafted for the modern man. Style meets comfort in every piece.</p>
+                <a href="#mens-products" class="btn btn-primary btn-lg btn-pill" style="margin-top:1.5rem;">
+                    Shop Now <i class="fas fa-arrow-right"></i>
+                </a>
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <strong>{{ total }}</strong>
+                        <span>Products</span>
+                    </div>
+                    <div class="hero-stat">
+                        <strong>{{ mens_categories.count }}</strong>
+                        <span>Categories</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="collection-page">
+    <div class="container">
+        <div class="collection-layout">
+
+            <aside class="sidebar">
+                <div class="sidebar-card">
+                    <div class="sidebar-card-header">
+                        <i class="fas fa-th-large"></i> Categories
+                    </div>
+                    <div class="sidebar-card-body">
+                        <div class="category-filter-list">
+                            <a href="{% url 'xypher_lux:mens_collection' %}"
+                               class="category-filter-item {% if not selected_category %}active{% endif %}">
+                                All Men's
+                                <span class="count">{{ total }}</span>
+                            </a>
+                            {% for cat in mens_categories %}
+                            <a href="{% url 'xypher_lux:mens_collection' %}?category={{ cat.slug }}"
+                               class="category-filter-item {% if selected_category == cat.slug %}active{% endif %}">
+                                {{ cat.name }}
+                                <span class="count">{{ cat.products.count }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-card">
+                    <div class="sidebar-card-header">
+                        <i class="fas fa-info-circle"></i> Quick Info
+                    </div>
+                    <div class="sidebar-card-body">
+                        <p style="font-size:0.875rem;color:var(--color-gray-500);line-height:1.6;">
+                            Free shipping on orders over <strong style="color:var(--color-primary);">Kshs 600</strong>.
+                            Easy 30-day returns on all items.
+                        </p>
+                    </div>
+                </div>
+            </aside>
+
+            <div class="collection-main">
+                <div class="collection-toolbar">
+                    <div class="toolbar-left">
+                        Showing <strong>{{ products.count }}</strong>
+                        product{{ products.count|pluralize }}
+                        {% if selected_category %}
+                            in <strong>{{ selected_category|title }}</strong>
+                        {% endif %}
+                    </div>
+                    <div class="toolbar-right">
+                        <select class="sort-select" id="sortSelect" onchange="sortProducts(this.value)">
+                            <option value="default">Sort: Default</option>
+                            <option value="price-low">Price: Low to High</option>
+                            <option value="price-high">Price: High to Low</option>
+                            <option value="name">Name: A-Z</option>
+                        </select>
+                    </div>
+                </div>
+
+                {% if products %}
+                <div class="products-grid" id="productsGrid">
+                    {% for product in products %}
+                    <div class="product-card" data-price="{{ product.price }}" data-name="{{ product.name }}">
+                        <div class="product-img-wrap">
+                            {% if product.image %}
+                                <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+                            {% elif product.image_url %}
+                                <img src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy">
+                            {% else %}
+                                <img src="https://images.unsplash.com/photo-1617137968427-85924c800a22?auto=format&fit=crop&w=400&q=60"
+                                     alt="{{ product.name }}" loading="lazy">
+                            {% endif %}
+
+                            {% if not product.is_in_stock %}
+                            <div class="out-of-stock-overlay">
+                                <span class="out-of-stock-badge">Out of Stock</span>
+                            </div>
+                            {% elif product.stock <= 5 %}
+                            <span class="stock-badge stock-badge--low">Only {{ product.stock }} left</span>
+                            {% endif %}
+
+                            <button class="wishlist-btn" aria-label="Add to wishlist">
+                                <i class="far fa-heart"></i>
+                            </button>
+                        </div>
+
+                        <div class="product-body">
+                            <p class="product-category-tag">{{ product.category.name }}</p>
+                            <h3 class="product-name">{{ product.name }}</h3>
+
+                            <div class="product-stars">
+                                {% with rating=product.rating|default:0 %}
+                                {% for i in "12345" %}
+                                    <i class="fas fa-star" style="{% if forloop.counter > rating %}color:var(--color-gray-200);{% endif %}"></i>
+                                {% endfor %}
+                                {% endwith %}
+                                <span>({{ product.stock }} in stock)</span>
+                            </div>
+
+                            {% if product.available_sizes %}
+                            <div class="sizes-preview">
+                                {% for size in product.available_sizes.split %}
+                                <span class="size-chip">{{ size|cut:"," }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
+                            <div class="product-footer">
+                                <span class="product-price">${{ product.price }}</span>
+                                <button class="add-to-cart-btn"
+                                        {% if not product.is_in_stock %}disabled{% endif %}
+                                        onclick="addToCart({{ product.id }})"
+                                        aria-label="Add to cart">
+                                    <i class="fas fa-shopping-bag"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-tshirt"></i>
+                    <h3>No products found</h3>
+                    <p>We couldn't find any men's products. Try a different category or check back later.</p>
+                    <a href="{% url 'xypher_lux:mens_collection' %}" class="btn btn-primary btn-pill">
+                        View All Men's
+                    </a>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

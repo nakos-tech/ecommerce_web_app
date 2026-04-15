@@ -1,5 +1,7 @@
 from django.urls import path
 from . import views
+from django.conf.urls.static import static
+from django.conf import settings 
 
 app_name = "xypher_lux"
 
@@ -13,15 +15,22 @@ urlpatterns = [
     path('set_new_password/', views.set_new_password_view, name='set_new_password'),
     path('logout/', views.logout_view, name='logout'),
     path('profile/', views.profile_view, name='profile'),
+    path('search/', views.search_view, name='search'),
+    path("mens/", views.mens_collection_view, name="mens_collection"),
+    path("women/", views.women_collection_view, name="women_collection"),
+    path('<int:id>/<slug:slug>/', views.product_detail_view, name='product_detail'),
     path('<slug:category_slug>/', views.product_list, name='product_list_by_category'),
-    # path('<int:id>/<slug:slug>/', views.product_detail, name='product_detail'),
+    
 
+    # individual category views
+    
         # Cart URLs
     path('cart/', views.cart_view, name='cart_view'),
     path('cart/add/', views.add_to_cart_view, name='add_to_cart'),
     path('cart/update/<int:item_id>/', views.update_cart_item_view, name='update_cart_item'),
     path('cart/remove/<int:item_id>/', views.remove_from_cart_view, name='remove_from_cart'),
     path('cart/clear/', views.clear_cart_view, name='clear_cart'),
+
     
     # Checkout URLs
     path('checkout/', views.checkout_view, name='checkout'),
@@ -30,5 +39,5 @@ urlpatterns = [
     # Order History URLs
     path('orders/', views.order_history_view, name='order_history'),
     path('orders/<int:order_id>/', views.order_detail_view, name='order_detail'),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

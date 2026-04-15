@@ -1,0 +1,266 @@
+{% extends 'xypher_lux/base.html' %}
+{% load static %}
+
+{% block title %}{{ product.name }} — XypherLux{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/detail.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- ====== BREADCRUMB ====== -->
+<div class="detail-breadcrumb">
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="{% url 'xypher_lux:product_list' %}">Home</a>
+            <i class="fas fa-chevron-right"></i>
+            <a href="{% url 'xypher_lux:product_list_by_category' product.category.slug %}">
+                {{ product.category.name }}
+            </a>
+            <i class="fas fa-chevron-right"></i>
+            <span>{{ product.name }}</span>
+        </nav>
+    </div>
+</div>
+
+
+<!-- ====== PRODUCT DETAIL ====== -->
+<section class="detail-section">
+    <div class="container">
+        <div class="detail-grid">
+
+            <!-- LEFT — Images -->
+            <div class="detail-images">
+                <div class="detail-main-img">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}"
+                             alt="{{ product.name }}"
+                             id="mainProductImg">
+                    {% elif product.image_url %}
+                        <img src="{{ product.image_url }}"
+                             alt="{{ product.name }}"
+                             id="mainProductImg">
+                    {% else %}
+                        <img src="https://images.unsplash.com/photo-1516257984-b1b4d707412e?auto=format&fit=crop&w=800&q=80"
+                             alt="{{ product.name }}"
+                             id="mainProductImg">
+                    {% endif %}
+
+                    {% if not product.is_in_stock %}
+                    <div class="detail-out-of-stock">
+                        <span>Out of Stock</span>
+                    </div>
+                    {% endif %}
+
+                    {% if product.is_featured %}
+                    <span class="detail-featured-badge">
+                        <i class="fas fa-star"></i> Featured
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+
+            <!-- RIGHT — Info -->
+            <div class="detail-info">
+
+                <span class="detail-category">{{ product.category.name }}</span>
+                <h1 class="detail-name">{{ product.name }}</h1>
+
+                <!-- Rating -->
+                <div class="detail-rating">
+                    {% with rating=product.rating|default:0 %}
+                    <div class="detail-stars">
+                        {% for i in "12345" %}
+                            <i class="fas fa-star {% if forloop.counter > rating %}star-empty{% endif %}"></i>
+                        {% endfor %}
+                    </div>
+                    <span class="detail-rating-text">{{ product.rating }}/5</span>
+                    {% endwith %}
+                </div>
+
+                <!-- Price -->
+                <div class="detail-price-wrap">
+                    <span class="detail-price">${{ product.price }}</span>
+                    {% if product.is_in_stock %}
+                    <span class="detail-stock-tag in-stock">
+                        <i class="fas fa-check-circle"></i> In Stock ({{ product.stock }} left)
+                    </span>
+                    {% else %}
+                    <span class="detail-stock-tag out-stock">
+                        <i class="fas fa-times-circle"></i> Out of Stock
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- Description -->
+                {% if product.description %}
+                <div class="detail-description">
+                    <h3>Description</h3>
+                    <p>{{ product.description }}</p>
+                </div>
+                {% endif %}
+
+                <!-- Sizes -->
+                {% if product.available_sizes %}
+                <div class="detail-option">
+                    <h3>Select Size <span id="selectedSize"></span></h3>
+                    <div class="detail-sizes">
+                        {% for size in product.available_sizes.split %}
+                        <button class="size-btn" onclick="selectSize(this, '{{ size|cut:"," }}')">
+                            {{ size|cut:"," }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Colors -->
+                {% if product.available_colors %}
+                <div class="detail-option">
+                    <h3>Select Color <span id="selectedColor"></span></h3>
+                    <div class="detail-colors">
+                        {% for color in product.available_colors.split %}
+                        <button class="color-btn"
+                                onclick="selectColor(this, '{{ color|cut:"," }}')"
+                                title="{{ color|cut:"," }}">
+                            {{ color|cut:"," }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Quantity -->
+                <div class="detail-option">
+                    <h3>Quantity</h3>
+                    <div class="detail-qty">
+                        <button class="qty-btn" onclick="changeQty(-1)">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <input type="number" id="detailQty" value="1" min="1"
+                               max="{{ product.stock }}" class="qty-input">
+                        <button class="qty-btn" onclick="changeQty(1)">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="detail-actions">
+                    <button class="btn btn-primary btn-lg detail-cart-btn"
+                            {% if not product.is_in_stock %}disabled{% endif %}
+                            onclick="addToCartDetail({{ product.id }})">
+                        <i class="fas fa-shopping-bag"></i>
+                        {% if product.is_in_stock %}Add to Cart{% else %}Out of Stock{% endif %}
+                    </button>
+                    <button class="btn detail-wishlist-btn" aria-label="Wishlist">
+                        <i class="far fa-heart"></i>
+                    </button>
+                </div>
+
+                <!-- Meta -->
+                <div class="detail-meta">
+                    <p><span>Category:</span> {{ product.category.name }}</p>
+                    <p><span>SKU:</span> {{ product.slug }}</p>
+                    <p><span>Added:</span> {{ product.created_at|date:"M d, Y" }}</p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- ====== FEATURED PRODUCTS ====== -->
+{% if featured_products %}
+
+<section class="related-section">
+    <div class="container">
+        <div class="related-header">
+            <h2>Featured Products</h2>
+            <p>Our most featured products </p>
+        </div>
+        <div class="related-grid">
+            {% for item in featured_products %}
+            <div class="related-card">
+                <a href="{{ item.get_absolute_url }}" class="related-img-wrap">
+                    {% if item.image %}
+                        <img src="{{ item.image.url }}" alt="{{ item.name }}" loading="lazy">
+                    {% elif item.image_url %}
+                        <img src="{{ item.image_url }}" alt="{{ item.name }}" loading="lazy">
+                    {% else %}
+                        <img src="https://images.unsplash.com/photo-1516257984-b1b4d707412e?auto=format&fit=crop&w=400&q=60"
+                             alt="{{ item.name }}" loading="lazy">
+                    {% endif %}
+                    <span class="related-featured-badge"><i class="fas fa-star"></i> Featured</span>
+                </a>
+                <div class="related-body">
+                    <span class="related-cat">{{ item.category.name }}</span>
+                    <a href="{{ item.get_absolute_url }}">
+                        <h3 class="related-name">{{ item.name }}</h3>
+                    </a>
+                    <div class="related-footer">
+                        <span class="related-price">${{ item.price }}</span>
+                        <button class="search-add-btn"
+                                {% if not item.is_in_stock %}disabled{% endif %}
+                                onclick="addToCart({{ item.id }})"
+                                aria-label="Add to cart">
+                            <i class="fas fa-shopping-bag"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+
+<!-- ====== SIMILAR PRODUCTS ====== -->
+{% if similar_products %}
+<section class="related-section" style="background: var(--color-gray-50);">
+    <div class="container">
+        <div class="related-header">
+            <h2>Similar Products</h2>
+            <p>More from {{ product.category.name }}</p>
+        </div>
+        <div class="related-grid">
+            {% for item in similar_products %}
+            <div class="related-card">
+                <a href="{{ item.get_absolute_url }}" class="related-img-wrap">
+                    {% if item.image %}
+                        <img src="{{ item.image.url }}" alt="{{ item.name }}" loading="lazy">
+                    {% elif item.image_url %}
+                        <img src="{{ item.image_url }}" alt="{{ item.name }}" loading="lazy">
+                    {% else %}
+                        <img src="https://images.unsplash.com/photo-1516257984-b1b4d707412e?auto=format&fit=crop&w=400&q=60"
+                             alt="{{ item.name }}" loading="lazy">
+                    {% endif %}
+                </a>
+                <div class="related-body">
+                    <span class="related-cat">{{ item.category.name }}</span>
+                    <a href="{{ item.get_absolute_url }}">
+                        <h3 class="related-name">{{ item.name }}</h3>
+                    </a>
+                    <div class="related-footer">
+                        <span class="related-price">${{ item.price }}</span>
+                        <button class="search-add-btn"
+                                {% if not item.is_in_stock %}disabled{% endif %}
+                                onclick="addToCart({{ item.id }})"
+                                aria-label="Add to cart">
+                            <i class="fas fa-shopping-bag"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}
+

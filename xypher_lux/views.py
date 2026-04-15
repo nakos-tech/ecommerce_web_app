@@ -7,6 +7,7 @@ from .models import Category, Product, UserProfile, PasswordResetCode, Cart, Car
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.conf import settings
+from django.db.models import Q
 from datetime import timedelta
 from django.utils import timezone
 import random
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 # Create your views here.
 
 @require_http_methods(["POST", "GET"])
+
 def signup_view(request):
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
@@ -130,7 +132,7 @@ def verify_code_view(request):
     if request.method == "POST":
         code = request.POST.get("code")
         try:
-            password_reset_code = PasswordResetCode.objects.get(code=code)
+            password_reset_code = PasswordResetCode.objects.get(user=user, code=code)
             
             if (timezone.now() - password_reset_code.created_at) > timedelta(minutes=10):
                 password_reset_code.delete()
@@ -191,26 +193,120 @@ def product_list(request, category_slug=None):
     category = None
     categories = Category.objects.all()
     products = Product.objects.filter(is_active=True)
+
+    featured_products = Product.objects.filter(
+        is_featured=True,
+        is_active=True
+    )[:4]
     
     if category_slug:
         category = get_object_or_404(Category, slug=category_slug)
         products = products.filter(category=category)
+
+    # Randomly recommend products 
+    all_products = list(
+        Product.objects.filter(
+            is_active=True
+        ).values_list('id', flat=True)
+    )
+    random_ids = random.sample(all_products, min(4, len(all_products)))
+    recommended_products = Product.objects.filter(id__in=random_ids)
     
     return render(request, 'xypher_lux/product/list.html', {
         'category': category,
         'categories': categories,
-        'products': products
+        'products': products,
+        "featured_products": featured_products,
+        "recommended_products": recommended_products,
     })
 
-
-def get_or_create_cart(user):
-    """Helper function to get or create active cart for user"""
-    cart, created = Cart.objects.get_or_create(
-        user=user,
+def mens_collection_view(request):
+    mens_categories = Category.objects.filter(name__iexact="men")
+    products = Product.objects.filter(
+        category__in=mens_categories,
         is_active=True
-    )
-    return cart
+    ).select_related('category').order_by('-created_at')
 
+    featured = Product.objects.filter(
+        category__in=mens_categories,
+        is_active=True,
+        is_featured=True
+    )[:4] # show maximum 4 featured products
+
+    selected_category = request.GET.get('category')
+    if selected_category:
+        products = products.filter(category__slug=selected_category)
+
+    return render(request, 'xypher_lux/men.html', {
+        'products': products,
+        'mens_categories': mens_categories,
+        'selected_category': selected_category,
+        'total': products.count(),
+        'featured': featured,
+    })
+
+def women_collection_view(request):
+    women_categories = Category.objects.filter(name__iexact="women")
+    products = Product.objects.filter(
+        category__in=women_categories,
+        is_active=True
+    ).select_related("category").order_by("created_at")
+
+    featured_products = Product.objects.filter(
+        is_featured=True,
+        is_active=True
+    )[:4]
+
+    selected_category = request.GET.get("category")
+    if selected_category:
+        products = products.filter(category__slug=selected_category)
+
+    return render(request, "xypher_lux/women.html", {
+        "products": products,
+        "women_categories": women_categories,
+        "selected_category": selected_category,
+        "total": products.count(),
+    })
+    
+
+def search_view(request):
+    query = request.GET.get('q', '')
+    products = Product.objects.none()
+
+    if query:
+        products = Product.objects.filter(
+            Q(name__icontains=query) |
+            Q(description__icontains=query) |
+            Q(category__name__icontains=query),
+            is_active= True
+        ).select_related('category').distinct()
+
+    return render(request, 'xypher_lux/search.html', {
+        'query': query,
+        'products': products,
+        'total': products.count(),
+    })
+
+def product_detail_view(request, id, slug):
+    product = get_object_or_404(Product, id=id, slug=slug, is_active=True)
+
+    # similar products - same category, exclude current
+
+    similar_products = Product.objects.filter(
+        category = product.category,
+        is_active = True
+    ).exclude(id=product.id)[:6]
+
+    featured_products = Product.objects.filter(
+        is_featured=True,
+        is_active=True
+    ).exclude(id=product.id)[:4]
+
+    return render(request, "xypher_lux/detail.html", {
+    "product" : product,
+    "similar_products": similar_products,
+    "featured_products": featured_products, 
+    })
 
 @login_required
 def cart_view(request):
@@ -250,7 +346,7 @@ def add_to_cart_view(request):
             }, status=400)
         
         cart = get_or_create_cart(request.user)
-        
+        pyth
         # Check if item already exists in cart
         cart_item, created = CartItem.objects.get_or_create(
             cart=cart,
