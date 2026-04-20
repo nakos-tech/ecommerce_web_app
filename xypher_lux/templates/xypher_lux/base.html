@@ -34,7 +34,11 @@
 
             <!-- Desktop Nav -->
             <nav class="main-nav" aria-label="Main navigation">
-                <a href="{% url 'xypher_lux:product_list' %}">Home</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'xypher_lux:dashboard' %}">Home</a>
+                {% else %}
+                    <a href="{% url 'xypher_lux:product_list' %}">Home</a>
+                {% endif %}
                 <a href="{% url 'xypher_lux:mens_collection' %}">Men</a>
                 <a href="{% url 'xypher_lux:women_collection' %}">Women</a>
                 <a href="#">Kids</a>
@@ -48,18 +52,26 @@
                            placeholder="Search products..."
                            class="header-search-input"
                            id="headerSearchInput">
-                    <button type="submit" class="header-icon-btn" aria-label="Search">
-                        <i class="fas fa-search"></i>
-                    </button>
+                    <button type="submit" id="searchBtn" class="header-icon-btn" aria-label="Search">search</button>
                 </form>
 
                 <button class="header-icon-btn" id="openCartBtn" aria-label="Cart">
-                    <i class="fas fa-shopping-bag"></i>
-                    <span class="cart-badge" id="headerCartCount">0</span>
+                    <span style="position: relative; display: inline-flex;">
+                        <i class="fas fa-shopping-bag"></i>
+                        <span class="cart-badge" id="headerCartCount">0</span>
+                    </span>
+                    <span class="cart-text">Cart</span>
                 </button>
-
-                <button class="header-icon-btn" id="showLogin" aria-label="Account">
+                
+                <button class="header-icon-btn" id="accountBtn" aria-label="Account"
+                    data-authenticated="{{ user.is_authenticated|lower }}"
+                    data-profile-url="{% url 'xypher_lux:profile' %}">
                     <i class="fas fa-user"></i>
+                    {% if user.is_authenticated %}
+                        <span class="account-btn-text">Hi, {{ user.first_name|default:user.username }}</span>
+                    {% else %}
+                        <span class="account-btn-text">Account</span>
+                    {% endif %}
                 </button>
 
                 <button class="mobile-menu-btn" aria-label="Menu">
@@ -98,7 +110,7 @@
             <div class="modal-body">
                 <div class="alert alert--error" id="loginError" role="alert"></div>
 
-                <form id="loginForm" method="POST" action="{% url 'xypher_lux:login_view' %}">
+                <form id="loginForm" method="POST" action="{% url 'xypher_lux:login' %}">
                     {% csrf_token %}
                     <div class="form-group">
                         <label for="loginUsername">Username or Email</label>
@@ -545,4 +557,14 @@
     {% block extra_js %}{% endblock %}
 
 </body>
+{% if messages %}
+    <div class="toast-contaner">
+        {% for message in messages %}
+            <div class="toast toast--{{ message.tags}}">
+                <span class="toast-text">{{ message}}</span>
+                <button class="toast-close">&times;</button>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
 </html>

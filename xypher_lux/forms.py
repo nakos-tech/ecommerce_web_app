@@ -46,28 +46,26 @@ class UserRegistrationForm(forms.Form):
         return cleaned_data
 
 class SetPasswordForm(forms.Form):
-    new_password = forms.CharField(widget=forms.PasswordInput, label="New Password")
+    new_password     = forms.CharField(widget=forms.PasswordInput, label="New Password")
     confirm_password = forms.CharField(widget=forms.PasswordInput, label="Confirm Password")
 
     def clean(self):
-        cleaned_password = super().clean()
-        new_password = cleaned_password.get("new_password")
-        confirm_password = cleaned_password.get("confirm_password")
+        cleaned_data     = super().clean()
+        new_password     = cleaned_data.get("new_password")
+        confirm_password = cleaned_data.get("confirm_password")
 
         if new_password != confirm_password:
-            raise ValidationError("Passwords do not mutch.")
-
-        # Password complexity check
+            raise ValidationError("Passwords do not match.")
         if new_password and len(new_password) < 8:
-            raiseValidationError("Password must be at least 8 characters long.")
+            raise ValidationError("Password must be at least 8 characters long.")
         if new_password and not re.search("[A-Z]", new_password):
             raise ValidationError("Password must contain at least one uppercase letter.")
-        if new_password and re.search("[a-z]", new_password):
+        if new_password and not re.search("[a-z]", new_password):
             raise ValidationError("Password must contain at least one lowercase letter.")
         if new_password and not re.search("[0-9]", new_password):
-            raise ValidationError("Password must contain at least one digit.")   \
-        
-        return cleaned_password
+            raise ValidationError("Password must contain at least one digit.")
+
+        return cleaned_data
 
 class AddToCartForm(forms.Form):
     # form for adding items to the cart 

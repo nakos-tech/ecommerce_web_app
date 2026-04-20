@@ -90,6 +90,16 @@ bind('showLoginFromGenerateCode', () => { closeAllAuthModals(); openModal(modals
 bind('resendCode',              () => { closeAllAuthModals(); openModal(modals.generateCode); });
 bind('openCartBtn',             () => { openModal(modals.cart); showCartView(); });
 
+bind('accountBtn', () => {
+    const btn = document.getElementById('accountBtn');
+    if (btn.dataset.authenticated === 'true') {
+        window.location.href = btn.dataset.profileUrl;
+    } else {
+        closeAllAuthModals();
+        openModal(modals.login);
+    }
+})
+
 // ============================================================
 // UTILITY — FORM HELPERS
 // ============================================================
@@ -209,7 +219,6 @@ function validateSignupForm() {
 // ============================================================
 // AJAX FETCH WRAPPER
 // ============================================================
-
 async function apiFetch(form, bodyData = null) {
     const data = bodyData || new FormData(form);
     try {
@@ -609,3 +618,121 @@ if (searchBtn && searchInput) {
         }
     });
 }
+
+
+// profile section 
+
+document.querySelectorAll('.nav-link[data-target]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.profile-section').forEach(s => s.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.target).classList.add('active');
+    });
+  });
+ 
+  // ── Helper: AJAX form submit ────────────────────────────────────
+  async function submitForm(form, btnId, errorId, successId) {
+    const btn = document.getElementById(btnId);
+    const errorEl = document.getElementById(errorId);
+    const successEl = document.getElementById(successId);
+ 
+    errorEl.style.display = 'none';
+    successEl.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+ 
+    const { ok, result } = await apiFetch(form);
+ 
+    btn.disabled = false;
+    btn.textContent = btn.id === 'passwordBtn' ? 'Update password' : 'Save changes';
+ 
+    if (ok) {
+      successEl.textContent = result.message;
+      successEl.style.display = 'block';
+      if (btn.id === 'passwordBtn') form.reset();
+    } else {
+      errorEl.textContent = result.message;
+      errorEl.style.display = 'block';
+    }
+  }
+ 
+  // ── Profile form ────────────────────────────────────────────────
+
+
+  // ── Sidebar navigation ──────────────────────────────────────────
+  document.querySelectorAll('.nav-link[data-target]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.profile-section').forEach(s => s.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.target).classList.add('active');
+    });
+  });
+
+  // ── Helper: AJAX form submit ────────────────────────────────────
+  async function submitForm(form, btnId, errorId, successId) {
+    const btn       = document.getElementById(btnId);
+    const errorEl   = document.getElementById(errorId);
+    const successEl = document.getElementById(successId);
+
+    // reset messages
+    errorEl.style.display   = 'none';
+    successEl.style.display = 'none';
+
+    btn.disabled    = true;
+    btn.textContent = 'Saving…';
+
+    const { ok, result } = await apiFetch(form);
+
+    btn.disabled = false;
+    btn.textContent = btnId === 'passwordBtn' ? 'Update password' : 'Save changes';
+
+    if (ok) {
+      successEl.textContent    = result.message;
+      successEl.style.display  = 'block';
+      if (btnId === 'passwordBtn') form.reset();
+    } else {
+      errorEl.textContent   = result.message;
+      errorEl.style.display = 'block';
+    }
+  }
+
+  // ── Profile form ────────────────────────────────────────────────
+  document.getElementById('profileForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    submitForm(this, 'profileBtn', 'profileError', 'profileSuccess');
+  });
+
+  // ── Password form ───────────────────────────────────────────────
+  document.getElementById('passwordForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    submitForm(this, 'passwordBtn', 'passwordError', 'passwordSuccess');
+  });
+
+  // ── Delete account ──────────────────────────────────────────────
+  document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
+    if (!confirm('Are you sure you want to permanently delete your account? This cannot be undone.')) return;
+
+    try {
+      const res    = await fetch("{% url 'xypher_lux:delete_account' %}", {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCSRFToken(),
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      });
+      const result = await res.json();
+      if (res.ok) window.location.href = result.redirect_url;
+    } catch (err) {
+      console.error('Delete account error:', err);
+      alert('Something went wrong. Please try again.');
+    }
+  });
+
+  // ── Deep-link to a tab via URL hash e.g. /profile/#manage ──────
+  const hash = window.location.hash.replace('#', '');
+  if (hash) {
+    const target = document.querySelector(`.nav-link[data-target="${hash}"]`);
+    if (target) target.click();
+  }

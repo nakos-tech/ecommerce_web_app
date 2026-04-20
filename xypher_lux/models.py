@@ -223,3 +223,69 @@ class OrderItem(models.Model):
     
     def get_cost(self):
         return self.price * self.quantity
+
+# notification model
+class Notification(models.Model):
+    TYPE_CHOICES = [
+        ("confirmed", 'order Confirmed'),
+        ("shipped", 'order Shipped'),
+        ("delivered", 'order Delivered'),
+        ("cancelled", 'order Cancelled'),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notifications")
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default="confirmed")
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        username = self.user.username if self.user else "Unknown user"
+        return f"Notification for {username} - {self.title}"
+
+class WishlistItem(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="wishlist_items")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-added_at"]
+        unique_together = ("user", "product")
+
+    def __str__(self):
+        return f"{self.product.name} in {self.user.username}'s wishlist"
+
+class ShippingAddress(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="shipping_addresses")
+    address_line1 = models.CharField(max_length=255)
+    address_line2 = models.CharField(max_length=255, blank=True)
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    postal_code = models.CharField(max_length=20)
+    country = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_default = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-created_at"]
+    
+    @property
+    def full_name(self):
+        return self.user.get_full_name() or self.user.username
+    
+    @property
+    def phone(self):
+        return self.user.userprofile.phone 
+
+    def __str__(self):
+        return f"{self.user.username} - {self.address_line1}, {self.city}"
+
+    def save(self, *args, **kwargs):
+        if self.is_default:
+            ShippingAddress.objects.filter(
+                user=self.user, is_default=True
+            ).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)

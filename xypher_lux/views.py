@@ -3,13 +3,14 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from .forms import UserRegistrationForm, SetPasswordForm, AddToCartForm, UpdateCartItemForm, CheckoutForm
 from django.contrib.auth.decorators import login_required
-from .models import Category, Product, UserProfile, PasswordResetCode, Cart, CartItem, Product, Order, OrderItem
+from .models import Category, Product, UserProfile, PasswordResetCode, Cart, CartItem, Product, Order, OrderItem,  Notification, WishlistItem, ShippingAddress
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.conf import settings
 from django.db.models import Q
 from datetime import timedelta
 from django.utils import timezone
+from django.urls import reverse
 import random
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -75,24 +76,29 @@ def signup_view(request):
 def login_view(request):
     # If user is already authenticated, redirect to home
     if request.user.is_authenticated:
-        return redirect('xypher_lux:product_list')
-    
+        # ✅ Return JSON so apiFetch can handle it consistently
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'message': 'Already logged in.',
+                'redirect_url': reverse('xypher_lux:dashboard')
+            })
+        return redirect('xypher_lux:dashboard')
+
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
-        
+
         if user is not None:
             login(request, user)
-            # Success: Return JSON response with redirect URL
-            next_url = request.GET.get('next', 'xypher_lux:product_list')
-            return JsonResponse({'message': 'Login successful.', 'redirect_url': next_url})
+            messages.success(request, f"Welcome back, {user.first_name or user.username}!")
+            next_url = request.GET.get('next')
+            redirect_url = next_url if next_url else reverse('xypher_lux:dashboard')
+            return JsonResponse({'message': 'Login successful.', 'redirect_url': redirect_url})
         else:
-            # Error: Return JSON error response
             return JsonResponse({'message': 'Invalid username or password.'}, status=400)
-    
-    # For GET requests, render the page
-    return render(request, 'xypher_lux/product/list.html')
+            # GET request — render the login page
+    return redirect('xypher_lux:product_list')  # ✅ double-check this template path
 
 def forgot_password_view(request):
     if request.method == "POST":
@@ -181,14 +187,116 @@ def set_new_password_view(request):
     # For GET requests, render the page
     return render(request, 'xypher_lux/product/list.html')
 
+@login_required(login_url="xypher_lux:login")
+def dashboard_view(request, category_slug=None):
+    user = request.user
+
+    category = None
+    categories = Category.objects.all()
+    products = Product.objects.filter(is_active=True)
+    cart = Cart.objects.filter(user=user, is_active=True).first()
+    
+    featured_products = Product.objects.filter(
+        is_featured=True,
+        is_active=True
+    )[:4]
+
+    if category_slug:
+        category = get_object_or_404(Category, slug=category_slug)
+        products = products.filter(category=category)
+
+    all_products = list(
+        Product.objects.filter(
+            is_active=True
+        ).values_list('id', flat=True)
+    )
+    random_ids = random.sample(all_products, min(4, len(all_products)))
+    recommended_products = Product.objects.filter(id__in=random_ids)
+
+    return render(request, "xypher_lux/dashboard.html", {
+        "user": user,
+        "category": category,
+        "categories": categories,
+        "products": products,
+        "featured_products": featured_products,
+        "recommended_products": recommended_products,
+    })
+
+
 def logout_view(request):
     logout(request)
     messages.success(request, 'You have been successfully logged out.')
-    return redirect('store:product_list')
+    return redirect('xypher_lux:product_list')
 
-# @login_required
+@login_required(login_url="xypher_lux:login")
 def profile_view(request):
-    return render(request, 'registration/profile.html')
+
+    user = request.user
+    profile = user.userprofile # assumes a OneToOne User profile model
+
+    context = {
+        'profile': profile,
+        'orders': Order.objects.filter(user=user).order_by('created_at'),
+        'notifications': Notification.objects.filter(user=user).order_by('-created_at')[:5],  # latest 5 notifications
+        'wishlist': WishlistItem.objects.filter(user=user).order_by('-added_at')[:10],  # latest 10 wishlist items
+        "unread_notifications_count": Notification.objects.filter(user=user, is_read=False).count(),
+        "shipping_addresses": ShippingAddress.objects.filter(user=user).order_by('-created_at')[:5],  # latest 5 addresses
+    }
+    return render(request, 'xypher_lux/profile.html', context)
+
+@login_required(login_url="xypher_lux:login")
+def update_profile_view(request):
+    if request.method != 'POST':
+        return JsonResponse({"message": "Invalid request method."}, status=405)
+
+    user = request.user
+    profile, _ = UserProfile.objects.get_or_create(user=user)  # ✅ safe
+
+    user.first_name = request.POST.get("first_name", user.first_name)
+    user.last_name  = request.POST.get("last_name", user.last_name)
+    user.email      = request.POST.get("email", user.email)
+    user.save()
+
+    profile.phone       = request.POST.get("phone", profile.phone)
+    profile.address     = request.POST.get("address", profile.address)
+    profile.city        = request.POST.get("city", profile.city)
+    profile.postal_code = request.POST.get("postal_code", profile.postal_code)
+    profile.save()
+
+    return JsonResponse({"message": "Profile updated successfully."})
+@login_required(login_url="xypher_lux:login")
+def update_password_view(request):
+    if request.method != POST:
+        return JsonResponse({"message": "invalid request method"}, status=405)
+    
+    form = SetPassword(request.POST)
+
+    if not form.is_valid():
+        # return the first validation error message from the form
+        error = form.error_as_data()
+        frst_error = next(iter(errors.value()))[0].message
+        return JsonRespomse({"messsage": first_error}, status=400)
+
+    user = request.user
+    user.set_password(form.cleaned_data['new_password'])
+    user.save()
+
+    update_session_auth_hash(request, user)
+
+    return JsonResponse({"message": "pssword updated successfully"})
+
+@login_required(login_url="xypher_lux:login")
+def delete_account_view(request):
+    if request.method != 'POST':
+        return JsonResponse({"message": "Invalid request method."}, status=400)
+    
+    user = request.user
+    user.delete()
+
+    return JsonResponse({"message": "Account deleted asuccessfully", 
+    "redirect_url": reverse("xypher_lux:product_list")
+    })
+
 def product_list(request, category_slug=None):
     category = None
     categories = Category.objects.all()

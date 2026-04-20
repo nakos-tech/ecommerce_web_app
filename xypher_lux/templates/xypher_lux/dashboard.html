@@ -1,0 +1,157 @@
+{% extends 'xypher_lux/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard — XypherLux{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-page">
+    <div class="container">
+
+        <!-- ====== HEADER ====== -->
+        <div class="dashboard-header">
+            <div class="dashboard-welcome">
+                <div class="dashboard-avatar">
+                    {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+                </div>
+                <div>
+                    <h1>Welcome back, {{ user.first_name }}!</h1>
+                    <p>{{ user.email }}</p>
+                </div>
+            </div>
+            <a href="{% url 'xypher_lux:logout' %}" class="btn btn-outline-danger">
+                <i class="fas fa-sign-out-alt"></i> Sign Out
+            </a>
+        </div>
+
+        <!-- ====== STATS + QUICK LINKS (side by side) ====== -->
+        <div class="dashboard-overview">
+
+            <!-- LEFT: Stats 2x2 grid -->
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon--primary">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">{{ total_orders }}</span>
+                        <span class="stat-label">Total Orders</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon--success">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">${{ total_spent|floatformat:2 }}</span>
+                        <span class="stat-label">Total Spent</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon--warning">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">{{ cart_items }}</span>
+                        <span class="stat-label">Items in Cart</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon stat-icon--accent">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">0</span>
+                        <span class="stat-label">Wishlist Items</span>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- RIGHT: Quick Links — must be direct child of dashboard-overview -->
+            <div class="dashboard-card">
+                <div class="dashboard-card-header">
+                    <h2><i class="fas fa-bolt"></i> Quick Links</h2>
+                </div>
+                <div class="dashboard-card-body">
+                    <div class="quick-links">
+                        <a href="{% url 'xypher_lux:product_list' %}" class="quick-link">
+                            <div class="quick-link-icon" style="background:rgba(79,70,229,0.1);color:var(--color-primary);">
+                                <i class="fas fa-store"></i>
+                            </div>
+                            <span>Browse Store</span>
+                            <i class="fas fa-chevron-right quick-link-arrow"></i>
+                        </a>
+                        <a href="{% url 'xypher_lux:mens_collection' %}" class="quick-link">
+                            <div class="quick-link-icon" style="background:rgba(16,185,129,0.1);color:var(--color-success);">
+                                <i class="fas fa-tshirt"></i>
+                            </div>
+                            <span>Men's Collection</span>
+                            <i class="fas fa-chevron-right quick-link-arrow"></i>
+                        </a>
+                        <a href="{% url 'xypher_lux:women_collection' %}" class="quick-link">
+                            <div class="quick-link-icon" style="background:rgba(236,72,153,0.1);color:var(--color-accent);">
+                                <i class="fas fa-female"></i>
+                            </div>
+                            <span>Women's Collection</span>
+                            <i class="fas fa-chevron-right quick-link-arrow"></i>
+                        </a>
+                        <a href="{% url 'xypher_lux:profile' %}" class="quick-link">
+                            <div class="quick-link-icon" style="background:rgba(99,102,241,0.1);color:var(--color-primary);">
+                                <i class="fas fa-user-edit"></i>
+                            </div>
+                            <span>Edit Profile</span>
+                            <i class="fas fa-chevron-right quick-link-arrow"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        
+        </div>
+        <!-- ====== RECENT ORDERS (full width below) ====== -->
+        <div class="dashboard-card">
+            <div class="dashboard-card-header">
+                <h2><i class="fas fa-receipt"></i> Recent Orders</h2>
+                <a href="{% url 'xypher_lux:order_history' %}" class="view-all-link">
+                    View All <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            <div class="dashboard-card-body">
+                {% if recent_orders %}
+                <div class="orders-table">
+                    <div class="orders-table-head">
+                        <span>Order #</span>
+                        <span>Date</span>
+                        <span>Items</span>
+                        <span>Total</span>
+                        <span>Status</span>
+                    </div>
+                    {% for order in recent_orders %}
+                    <a href="{% url 'xypher_lux:order_detail' order.id %}" class="orders-table-row">
+                        <span class="order-number">{{ order.order_number }}</span>
+                        <span class="order-date">{{ order.created_at|date:"M d, Y" }}</span>
+                        <span class="order-items">{{ order.items.count }} item{{ order.items.count|pluralize }}</span>
+                        <span class="order-total">${{ order.total }}</span>
+                        <span class="order-status order-status--{{ order.status|lower }}">{{ order.status }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="dashboard-empty">
+                    <i class="fas fa-shopping-bag"></i>
+                    <p>No orders yet</p>
+                    <a href="{% url 'xypher_lux:product_list' %}" class="btn btn-primary btn-pill">
+                        Start Shopping
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
